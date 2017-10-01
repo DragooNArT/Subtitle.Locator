@@ -26,6 +26,54 @@ public class ParsedFileName {
 		return version;
 	}
 
+	public String getShowName() {
+		return getParsedAttributes().get(IFileNameParser.SHOW_NAME);
+	}
+
+	public boolean hasShowName() {
+		return getShowName() != null;
+	}
+
+	public String getSeason() {
+		return getParsedAttributes().get(IFileNameParser.SHOW_SEASON);
+	}
+
+	public boolean hasSeason() {
+		return getSeason() != null;
+	}
+
+	public String getEpisode() {
+		return getParsedAttributes().get(IFileNameParser.SHOW_EPISODE);
+	}
+
+	public boolean hasEpisode() {
+		return getEpisode() != null;
+	}
+
+	public String getRelease() {
+		return getParsedAttributes().get(IFileNameParser.SHOW_RELEASE);
+	}
+
+	public boolean hasRelease() {
+		return getRelease() != null;
+	}
+
+	public String getYear() {
+		return getParsedAttributes().get(IFileNameParser.SHOW_YEAR);
+	}
+
+	public boolean hasYear() {
+		return getYear() != null;
+	}
+
+	public String getResolution() {
+		return getParsedAttributes().get(IFileNameParser.SHOW_RESOLUTION);
+	}
+
+	public boolean hasResolution() {
+		return getResolution() != null;
+	}
+
 	public Map<String, String> getParsedAttributes() {
 		load();
 		return parsedAttributes;
@@ -43,24 +91,12 @@ public class ParsedFileName {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Best file name: " + origName).append("\n");
-		
-		sb.append("Name: " + getParsedAttributes().get(IFileNameParser.SHOW_NAME)).append("\n");
-		
-		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_YEAR)) {
-			sb.append("Year: " + getParsedAttributes().get(IFileNameParser.SHOW_YEAR)).append("\n");
-		}
-		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_SEASON)) {
-			sb.append("Season: " + getParsedAttributes().get(IFileNameParser.SHOW_SEASON)).append("\n");
-		}
-		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_EPISODE)) {
-			sb.append("Episode: " + getParsedAttributes().get(IFileNameParser.SHOW_EPISODE)).append("\n");
-		}
-		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_RESOLUTION)) {
-			sb.append("Resolution: " + getParsedAttributes().get(IFileNameParser.SHOW_RESOLUTION)).append("\n");
-		}
-		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_RELEASE)) {
-			sb.append("Release: " + getParsedAttributes().get(IFileNameParser.SHOW_RELEASE)).append("\n");
-		}
+		sb.append("Name: " + getShowName()).append("\n");
+		sb.append("Year: " + getYear()).append("\n");
+		sb.append("Season: " + getSeason()).append("\n");
+		sb.append("Episode: " + getEpisode()).append("\n");
+		sb.append("Resolution: " + getResolution()).append("\n");
+		sb.append("Release: " + getRelease()).append("\n");
 		return sb.toString();
 	}
 }

@@ -64,7 +64,7 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 		int success = 0;
 		int fail = 0;
 		for (VideoEntry ve : acceptedFiles) {
-			if (ve.getParsedFilename().getParsedAttributes().containsKey(IFileNameParser.SHOW_NAME)) {
+			if (ve.getParsedFilename().hasShowName()) {
 				System.out.println(ve.toString());
 				success++;
 			} else {
@@ -78,7 +78,7 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 	}
 
 	private boolean subtitleExactMatch(VideoEntry ve, Entry<String, Path> entry) {
-		String release = ve.getParsedFilename().getParsedAttributes().get(IFileNameParser.SHOW_RELEASE);
+		String release = ve.getParsedFilename().getRelease();
 		if(release != null) {
 				ParsedFileName pfn = null;
 				try {
@@ -87,7 +87,7 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 					System.out.println("Bad entry: "+entry.getKey());
 					throw t;
 				}
-				String subRelease = pfn.getParsedAttributes().get(IFileNameParser.SHOW_RELEASE);
+				String subRelease = pfn.getRelease();
 				if(release.equalsIgnoreCase(subRelease)) {
 					try {
 						Path newFilePath = ve.getPathToFile().getParent().resolve(ve.getFileName() + entry.getKey().substring(entry.getKey().lastIndexOf(".")));

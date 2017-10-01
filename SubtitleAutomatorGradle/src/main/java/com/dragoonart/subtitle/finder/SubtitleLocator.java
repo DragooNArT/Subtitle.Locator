@@ -20,6 +20,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
@@ -68,14 +69,14 @@ public class SubtitleLocator {
 		List<SubtitleArchiveEntry> subtitleList = new ArrayList<SubtitleArchiveEntry>();
 		
 		WebResource.Builder builder = client.resource(SUBS_SAB_URL).getRequestBuilder();
-		Map<String,String> vfb = ve.getParsedFilename().getParsedAttributes();
+		ParsedFileName vfb = ve.getParsedFilename();
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append(vfb.get(IFileNameParser.SHOW_NAME)).append(" ");
-		if (vfb.containsKey(IFileNameParser.SHOW_SEASON) && vfb.containsKey(IFileNameParser.SHOW_EPISODE)) {
-			sb.append(vfb.get(IFileNameParser.SHOW_SEASON)).append(" ")
-					.append(vfb.get(IFileNameParser.SHOW_EPISODE));
+		sb.append(vfb.getShowName()).append(" ");
+		if (vfb.hasSeason() && vfb.hasEpisode()) {
+			sb.append(vfb.getSeason()).append(" ")
+					.append(vfb.getEpisode());
 		}
 		formData.add("movie", sb.toString());
 		formData.add("act", "search");
