@@ -1,4 +1,5 @@
 package com.dragoonart.subtitle.finder;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -19,7 +20,7 @@ import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
 public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnable {
 
 	private Path rootFolder;
-	
+
 	private SubtitleLocator sl = new SubtitleLocator();
 	private String[] movieExtensions = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
 
@@ -35,28 +36,32 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 			Files.walkFileTree(rootFolder, this);
 			int success = 0;
 			int fail = 0;
-			for(VideoEntry ve : acceptedFiles) {
-				if(ve.getParsedFilename().getParsedAttributes().containsKey(IFileNameParser.SHOW_NAME)) {
+			for (VideoEntry ve : acceptedFiles) {
+				if (ve.getParsedFilename().getParsedAttributes().containsKey(IFileNameParser.SHOW_NAME)) {
 					System.out.println(ve.toString());
-				success++;
+					success++;
 				} else {
-					fail ++;
-					
+					fail++;
+
 				}
 			}
-			System.out.println("Total  : "+acceptedFiles.size());
-			System.out.println("Success: "+success);
-			System.out.println("Fail: "+fail);
-			List<SubtitleArchiveEntry> sre =sl.getSubtitleZips(acceptedFiles.get(15));
-			for(SubtitleArchiveEntry e : sre) {
-				for(Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
-					System.out.println("Name: "+entry.getKey()+" Location: "+entry.getValue().toAbsolutePath().toString());
-				}
-			}
+			System.out.println("Total  : " + acceptedFiles.size());
+			System.out.println("Success: " + success);
+			System.out.println("Fail: " + fail);
+			acceptedFiles.parallelStream().forEach(ve -> {
+				List<SubtitleArchiveEntry> sre = sl.getSubtitleZips(ve);
+				sre.parallelStream().forEach(e -> {
+					for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
+						System.out.println("Name: " + entry.getKey() + " Location: "
+								+ entry.getValue().toAbsolutePath().toString());
+					}
+				});
+			});
+	
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	private boolean acceptFile(String fileName) {

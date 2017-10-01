@@ -72,6 +72,7 @@ public class SubtitleArchiveEntry {
 					String fileName = fh.getFileNameString();
 					Path newFilePath = pathToSubtitle.getParent().resolve(fh.getFileNameString());
 					if (!Files.exists(newFilePath) && (fileName.endsWith(".srt") || fileName.endsWith(".sub"))) {
+						Files.createDirectories(newFilePath.getParent());
 						Files.copy(arch.getInputStream(fh), newFilePath);
 					}
 					result.put(fileName, newFilePath);

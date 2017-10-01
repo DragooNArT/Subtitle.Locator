@@ -11,6 +11,7 @@ public class Start {
 	
 	public static void main(String[] args) {
 		TimedFileScanner fScanner = new TimedFileScanner("E:/Downloads");
-		 scheduler.scheduleAtFixedRate(fScanner, 0, 5, TimeUnit.SECONDS);	
+		fScanner.run();
+//		 scheduler.scheduleAtFixedRate(fScanner, 0, 5, TimeUnit.SECONDS);	
 	}
 }
