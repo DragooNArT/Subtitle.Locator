@@ -27,7 +27,6 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.header.ContentDisposition;
-import com.sun.jersey.core.impl.provider.entity.ByteArrayProvider;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class SubtitleLocator {
@@ -47,21 +46,21 @@ public class SubtitleLocator {
 		if (vfb.isProccessedForSubtitles()) {
 			return vfb.getSubtitles();
 		}
-		List<SubtitleArchiveEntry> subsFound = lookupSubtitles(vfb.getParsedFilename().getParsedAttributes());
+		List<SubtitleArchiveEntry> subsFound = lookupSubtitles(vfb);
 
 		vfb.setSubtitles(subsFound);
 		return subsFound;
 	}
 
-	private List<SubtitleArchiveEntry> lookupSubtitles(Map<String, String> fileAttrs) {
+	private List<SubtitleArchiveEntry> lookupSubtitles(VideoEntry ve) {
 		WebResource.Builder builder = client.resource(SUBS_SAB_URL).getRequestBuilder();
-
+		Map<String,String> vfb = ve.getParsedFilename().getParsedAttributes();
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		StringBuilder sb = new StringBuilder();
-		sb.append(fileAttrs.get(IFileNameParser.SHOW_NAME)).append(" ");
-		if (fileAttrs.containsKey(IFileNameParser.SHOW_SEASON) && fileAttrs.containsKey(IFileNameParser.SHOW_EPISODE)) {
-			sb.append(fileAttrs.get(IFileNameParser.SHOW_SEASON)).append(" ")
-					.append(fileAttrs.get(IFileNameParser.SHOW_EPISODE));
+		sb.append(vfb.get(IFileNameParser.SHOW_NAME)).append(" ");
+		if (vfb.containsKey(IFileNameParser.SHOW_SEASON) && vfb.containsKey(IFileNameParser.SHOW_EPISODE)) {
+			sb.append(vfb.get(IFileNameParser.SHOW_SEASON)).append(" ")
+					.append(vfb.get(IFileNameParser.SHOW_EPISODE));
 		}
 		formData.add("movie", sb.toString());
 		formData.add("act", "search");
@@ -78,7 +77,7 @@ public class SubtitleLocator {
 			Matcher matcher = pattern_subLinks.matcher(href);
 			if (matcher.matches()) {
 				String subName = link.textNodes().get(0).toString();
-				Path subtitleZip = downloadSubtitleToTemp(href);
+				Path subtitleZip = downloadSubtitleToTemp(ve.getAcceptableFileName(), href);
 				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(subName, href, subtitleZip);
 				subtitleList.add(entry);
 				System.out.println("Subtitle: " + subName + " Link: " + href);
@@ -87,8 +86,8 @@ public class SubtitleLocator {
 		return subtitleList;
 	}
 
-	private Path downloadSubtitleToTemp(String link) {
-		WebResource.Builder builder = client.resource(link).getRequestBuilder();
+	private Path downloadSubtitleToTemp(String folderName, String href) {
+		WebResource.Builder builder = client.resource(href).getRequestBuilder();
 		builder.header("Accept-Encoding", "gzip, deflate");
 		builder.header("Referer", "http://subs.sab.bz/index.php?");
 		ClientResponse res = builder.post(ClientResponse.class);
@@ -102,8 +101,8 @@ public class SubtitleLocator {
 		}
 		
 		InputStream subZip = res.getEntityInputStream();
-		Path dir = Paths.get("./testFiles/" + cdp.getFileName().substring(0, cdp.getFileName().lastIndexOf(".")));
-		Path file = dir.resolve("./" + cdp.getFileName());
+		Path dir = Paths.get("./testFiles/" + folderName);
+		Path file = dir.resolve(cdp.getFileName());
 		if(Files.exists(file)) {
 			return  file.toAbsolutePath();
 		}

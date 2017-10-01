@@ -51,7 +51,7 @@ public class SubtitleArchiveEntry {
 		}
 		return subtitleEntries;
 	}
-
+	
 	private Map<String, Path> unpackSubs() {
 		Map<String, Path> result = new HashMap<String,Path>();
 		try {
@@ -60,9 +60,11 @@ public class SubtitleArchiveEntry {
 				@Override
 				public void process(InputStream in, ZipEntry zipEntry) throws IOException {
 					String fileName = zipEntry.getName();
-					Path newFile = pathToSubtitle.getParent().toAbsolutePath().resolve(fileName);
-					Files.copy(in, newFile);
-					result.put(fileName, newFile);
+					Path newFilePath = pathToSubtitle.getParent().toAbsolutePath().resolve(fileName);
+					if (acceptSubtitleEntry(fileName, newFilePath)) {
+						Files.copy(in, newFilePath);
+						result.put(fileName, newFilePath);
+					}
 				}
 			});
 		} catch (Exception e) {
@@ -71,11 +73,16 @@ public class SubtitleArchiveEntry {
 				while ((fh = arch.nextFileHeader()) != null) {
 					String fileName = fh.getFileNameString();
 					Path newFilePath = pathToSubtitle.getParent().resolve(fh.getFileNameString());
-					if (!Files.exists(newFilePath) && (fileName.endsWith(".srt") || fileName.endsWith(".sub"))) {
+					if (acceptSubtitleEntry(fileName, newFilePath)) {
 						Files.createDirectories(newFilePath.getParent());
 						Files.copy(arch.getInputStream(fh), newFilePath);
 					}
+					try {
 					result.put(fileName, newFilePath);
+					} catch(Throwable ex) {
+						System.out.println("Bad fileName: "+fileName);
+						ex.printStackTrace();
+					}
 				}
 			} catch (RarException | IOException e1) {
 				e.printStackTrace();
@@ -84,6 +91,10 @@ public class SubtitleArchiveEntry {
 
 		}
 		return result;
+	}
+
+	private boolean acceptSubtitleEntry(String fileName, Path newFilePath) {
+		return !Files.exists(newFilePath) && (fileName.endsWith(".srt") || fileName.endsWith(".sub"));
 	}
 
 	public String getSubtitleName() {
