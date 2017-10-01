@@ -2,17 +2,21 @@ package com.dragoonart.subtitle.finder.beans;
 import java.nio.file.Path;
 import java.util.List;
 
+import com.dragoonart.subtitle.finder.parsers.impl.FileNameParser;
+
 public class VideoEntry {
 
 	private Path pathToFile;
 
 	private List<SubtitleEntry> subtitles;
+	
+	private String acceptableFileName = null;
 
 	private boolean subtitlesFound = false;
 	private ParsedFileName pfn;
 	public VideoEntry(Path pathToFile) {
 		this.pathToFile = pathToFile;
-		pfn = new ParsedFileName(getFileName());
+		pfn = new ParsedFileName(resolveBestFileName());
 	}
 
 	public boolean isSubtitlesFound() {
@@ -21,6 +25,26 @@ public class VideoEntry {
 
 	public void setSubtitlesFound(boolean subtitlesFound) {
 		this.subtitlesFound = subtitlesFound;
+	}
+	
+	public String getAcceptableFileName() {
+		if(acceptableFileName == null) {
+			acceptableFileName = resolveBestFileName();
+		}
+		return acceptableFileName;
+	}
+
+	private String resolveBestFileName() {
+		if (acceptableFileName == null) {
+			if (FileNameParser.canSplit(getFileName())) {
+				acceptableFileName = getFileName();
+			} else if(FileNameParser.canSplit(pathToFile.getParent().getFileName().toString())) {
+				acceptableFileName = pathToFile.getParent().getFileName().toString();
+			} else {
+				acceptableFileName = getFileName();
+			}
+		}
+		return acceptableFileName;
 	}
 
 	public Path getPathToFile() {
@@ -74,6 +98,6 @@ public class VideoEntry {
 
 	@Override
 	public String toString() {
-		return pathToFile.getFileName().toString() + " subtitlesFound: " + subtitlesFound;
+		return new StringBuilder().append("Original file name: ").append(getFileName()).append("\n").append(getParsedFilename().toString()).toString();
 	}
 }

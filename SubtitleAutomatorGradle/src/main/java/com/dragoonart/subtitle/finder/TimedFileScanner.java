@@ -33,15 +33,18 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 			int fail = 0;
 			for(VideoEntry ve : acceptedFiles) {
 				if(ve.getParsedFilename().getParsedAttributes().containsKey(IFileNameParser.SHOW_NAME)) {
-					System.out.println(ve.getParsedFilename().toString());
+					System.out.println(ve.toString());
 				success++;
 				} else {
 					fail ++;
 					
 				}
 			}
-			System.out.println("Sucess: "+success);
+			System.out.println("Total  : "+acceptedFiles.size());
+			System.out.println("Success: "+success);
 			System.out.println("Fail: "+fail);
+//			SubtitleLocator sl = new SubtitleLocator();
+//			sl.getSubtitles(acceptedFiles.get(0));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
