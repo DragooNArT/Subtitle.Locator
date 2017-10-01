@@ -9,9 +9,10 @@ public class VideoEntry {
 	private List<SubtitleEntry> subtitles;
 
 	private boolean subtitlesFound = false;
-
+	private ParsedFileName pfn;
 	public VideoEntry(Path pathToFile) {
 		this.pathToFile = pathToFile;
+		pfn = new ParsedFileName(getFileName());
 	}
 
 	public boolean isSubtitlesFound() {
@@ -24,6 +25,10 @@ public class VideoEntry {
 
 	public Path getPathToFile() {
 		return pathToFile;
+	}
+	
+	public ParsedFileName getParsedFilename() {
+		return pfn;
 	}
 
 	@Override
@@ -64,7 +69,7 @@ public class VideoEntry {
 	}
 
 	public String getFileName() {
-		return pathToFile.getFileName().toString();
+		return pathToFile.getFileName().toString().substring(0 , pathToFile.getFileName().toString().lastIndexOf("."));
 	}
 
 	@Override
