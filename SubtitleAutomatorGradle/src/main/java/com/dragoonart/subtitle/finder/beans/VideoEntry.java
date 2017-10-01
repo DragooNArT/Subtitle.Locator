@@ -8,7 +8,7 @@ public class VideoEntry {
 
 	private Path pathToFile;
 
-	private List<SubtitleEntry> subtitles;
+	private List<SubtitleArchiveEntry> subtitles;
 	
 	private String acceptableFileName = null;
 
@@ -80,11 +80,11 @@ public class VideoEntry {
 		return true;
 	}
 	
-	public List<SubtitleEntry> getSubtitles() {
+	public List<SubtitleArchiveEntry> getSubtitles() {
 		return subtitles;
 	}
 
-	public void setSubtitles(List<SubtitleEntry> subtitles) {
+	public void setSubtitles(List<SubtitleArchiveEntry> subtitles) {
 		this.subtitles = subtitles;
 	}
 	

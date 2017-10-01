@@ -8,15 +8,19 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
 
 public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnable {
 
 	private Path rootFolder;
+	
+	private SubtitleLocator sl = new SubtitleLocator();
 	private String[] movieExtensions = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
 
 	private List<VideoEntry> acceptedFiles = new ArrayList<>();
@@ -43,8 +47,12 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 			System.out.println("Total  : "+acceptedFiles.size());
 			System.out.println("Success: "+success);
 			System.out.println("Fail: "+fail);
-//			SubtitleLocator sl = new SubtitleLocator();
-//			sl.getSubtitles(acceptedFiles.get(0));
+			List<SubtitleArchiveEntry> sre =sl.getSubtitleZips(acceptedFiles.get(15));
+			for(SubtitleArchiveEntry e : sre) {
+				for(Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
+					System.out.println("Name: "+entry.getKey()+" Location: "+entry.getValue().toAbsolutePath().toString());
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

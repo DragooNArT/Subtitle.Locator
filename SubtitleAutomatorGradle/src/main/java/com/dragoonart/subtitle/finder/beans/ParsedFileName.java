@@ -47,7 +47,7 @@ public class ParsedFileName {
 		sb.append("Name: " + getParsedAttributes().get(IFileNameParser.SHOW_NAME)).append("\n");
 		
 		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_YEAR)) {
-			sb.append("Season: " + getParsedAttributes().get(IFileNameParser.SHOW_YEAR)).append("\n");
+			sb.append("Year: " + getParsedAttributes().get(IFileNameParser.SHOW_YEAR)).append("\n");
 		}
 		if (getParsedAttributes().containsKey(IFileNameParser.SHOW_SEASON)) {
 			sb.append("Season: " + getParsedAttributes().get(IFileNameParser.SHOW_SEASON)).append("\n");

@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Start {
 
-	private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+	private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 	
 	public static void main(String[] args) {
 		TimedFileScanner fScanner = new TimedFileScanner("E:/Downloads");

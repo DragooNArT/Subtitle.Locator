@@ -16,9 +16,11 @@ import org.apache.commons.lang.StringUtils;
 import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
 
 public class FileNameParser implements IFileNameParser {
+	
 	Pattern sXXeXX_pattern = Pattern.compile("[Ss]\\d\\d[Ee]\\d\\d");
 	Pattern matchYear = Pattern.compile("\\d\\d\\d\\d");
 	Pattern dotSepPattern = Pattern.compile("\\d{1,}[.]\\d{1,}");
+	
 	private static final String[] allForRemoval = new String[] { "HDTV", "HEVC", "UNRATED", "BluRay", "x265", "DTS-HD",
 			"X264", "WEB-DL", "H264" ,"DDC5", "AAC5" , "DTS" , "HDRip" , "DD5" , "BRRip" };
 
