@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,12 +17,10 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
-import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -59,76 +56,77 @@ public class SubtitleLocator {
 		result.addAll(getSubtitlesSubSab(ve));
 		return result;
 	}
+
 	private List<SubtitleArchiveEntry> getSubtitlesSubUnacs(VideoEntry ve) {
 		List<SubtitleArchiveEntry> subtitleList = new ArrayList<SubtitleArchiveEntry>();
 		WebResource.Builder builder = client.resource(SUBUNACS_URL).getRequestBuilder();
-		//TODO e tuka bluskai 
+		// TODO e tuka bluskai
 		return subtitleList;
 	}
+
 	private List<SubtitleArchiveEntry> getSubtitlesSubSab(VideoEntry ve) {
 		List<SubtitleArchiveEntry> subtitleList = new ArrayList<SubtitleArchiveEntry>();
-		
+
 		WebResource.Builder builder = client.resource(SUBS_SAB_URL).getRequestBuilder();
 		ParsedFileName vfb = ve.getParsedFilename();
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		StringBuilder sb = new StringBuilder();
-		
+
 		sb.append(vfb.getShowName()).append(" ");
 		if (vfb.hasSeason() && vfb.hasEpisode()) {
-			sb.append(vfb.getSeason()).append(" ")
-					.append(vfb.getEpisode());
+			sb.append(vfb.getSeason()).append(" ").append(vfb.getEpisode());
 		}
 		formData.add("movie", sb.toString());
 		formData.add("act", "search");
 		formData.add("select-language", "2");
 		ClientResponse resp = builder.entity(formData, MediaType.APPLICATION_FORM_URLENCODED)
 				.post(ClientResponse.class);
-		System.out.println("Looking for subtitles: " + sb.toString());
-		String content = resp.getEntity(String.class);
-		Document doc = Jsoup.parse(content);
-		Elements links = doc.getElementsByTag("a");
 		
-		for (Element link : links) {
+		System.out.println("SUB_SAB_BZ: Looking for subtitles: " + sb.toString());
+		
+		parseEntrySubSab(ve, subtitleList, Jsoup.parse(resp.getEntity(String.class)));
+		
+		return subtitleList;
+	}
+
+	private void parseEntrySubSab(VideoEntry ve, List<SubtitleArchiveEntry> subtitleList, Document doc) {
+		for (Element link : doc.getElementsByTag("a")) {
 			String href = link.attr("href");
 			Matcher matcher = pattern_subLinks.matcher(href);
 			if (matcher.matches()) {
 				String subName = link.textNodes().get(0).toString();
-				Path subtitleZip = downloadSubtitleToTemp(ve.getAcceptableFileName(), href);
-				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(subName, href, subtitleZip);
-				subtitleList.add(entry);
+				Path subtitleZip = null;
+				try {
+					subtitleZip = downloadSubtitleToTemp(ve.getAcceptableFileName(), href);
+				} catch (ParseException | IOException e) {
+					e.printStackTrace();
+				}
+				if (subtitleZip != null) {
+					SubtitleArchiveEntry entry = new SubtitleArchiveEntry(subName, href, subtitleZip);
+					subtitleList.add(entry);
+				}
 				System.out.println("Subtitle: " + subName + " Link: " + href);
 			}
 		}
-		return subtitleList;
 	}
 
-	private Path downloadSubtitleToTemp(String folderName, String href) {
+	private Path downloadSubtitleToTemp(String folderName, String href) throws ParseException, IOException {
 		WebResource.Builder builder = client.resource(href).getRequestBuilder();
 		builder.header("Accept-Encoding", "gzip, deflate");
 		builder.header("Referer", "http://subs.sab.bz/index.php?");
 		ClientResponse res = builder.post(ClientResponse.class);
 		String scd = res.getHeaders().getFirst("Content-Disposition");
-		ContentDisposition cdp = null;
-		try {
-			cdp = new ContentDisposition(scd);
-		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
+		ContentDisposition cdp = new ContentDisposition(scd);
+
 		InputStream subZip = res.getEntityInputStream();
 		Path dir = Paths.get("./testFiles/" + folderName);
 		Path file = dir.resolve(cdp.getFileName());
-		if(Files.exists(file)) {
-			return  file.toAbsolutePath();
+		if (Files.exists(file)) {
+			return file.toAbsolutePath();
 		}
-		try {
-			Files.createDirectories(dir);
-			Files.copy(subZip, file);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		Files.createDirectories(dir);
+		Files.copy(subZip, file);
+
 		System.out.println("Wrote to: " + file.toAbsolutePath());
 		return file.toAbsolutePath();
 	}
