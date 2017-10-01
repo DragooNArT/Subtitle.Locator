@@ -53,10 +53,25 @@ public class SubtitleLocator {
 	}
 
 	private List<SubtitleArchiveEntry> lookupSubtitles(VideoEntry ve) {
+		List<SubtitleArchiveEntry> result = new ArrayList<SubtitleArchiveEntry>();
+		result.addAll(getSubtitlesSubSab(ve));
+		result.addAll(getSubtitlesSubSab(ve));
+		return result;
+	}
+	private List<SubtitleArchiveEntry> getSubtitlesSubUnacs(VideoEntry ve) {
+		List<SubtitleArchiveEntry> subtitleList = new ArrayList<SubtitleArchiveEntry>();
+		WebResource.Builder builder = client.resource(SUBUNACS_URL).getRequestBuilder();
+		//TODO e tuka bluskai 
+		return subtitleList;
+	}
+	private List<SubtitleArchiveEntry> getSubtitlesSubSab(VideoEntry ve) {
+		List<SubtitleArchiveEntry> subtitleList = new ArrayList<SubtitleArchiveEntry>();
+		
 		WebResource.Builder builder = client.resource(SUBS_SAB_URL).getRequestBuilder();
 		Map<String,String> vfb = ve.getParsedFilename().getParsedAttributes();
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		StringBuilder sb = new StringBuilder();
+		
 		sb.append(vfb.get(IFileNameParser.SHOW_NAME)).append(" ");
 		if (vfb.containsKey(IFileNameParser.SHOW_SEASON) && vfb.containsKey(IFileNameParser.SHOW_EPISODE)) {
 			sb.append(vfb.get(IFileNameParser.SHOW_SEASON)).append(" ")
@@ -71,7 +86,7 @@ public class SubtitleLocator {
 		String content = resp.getEntity(String.class);
 		Document doc = Jsoup.parse(content);
 		Elements links = doc.getElementsByTag("a");
-		List<SubtitleArchiveEntry> subtitleList = new ArrayList<SubtitleArchiveEntry>();
+		
 		for (Element link : links) {
 			String href = link.attr("href");
 			Matcher matcher = pattern_subLinks.matcher(href);
