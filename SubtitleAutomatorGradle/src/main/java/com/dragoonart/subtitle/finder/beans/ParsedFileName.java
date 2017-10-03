@@ -38,16 +38,12 @@ public class ParsedFileName {
 		return getParsedAttributes().get(IFileNameParser.SHOW_SEASON);
 	}
 
-	public boolean hasSeason() {
+	public boolean isEpisodic() {
 		return getSeason() != null;
 	}
 
 	public String getEpisode() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_EPISODE);
-	}
-
-	public boolean hasEpisode() {
-		return getEpisode() != null;
 	}
 
 	public String getRelease() {

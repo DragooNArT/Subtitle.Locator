@@ -1,6 +1,7 @@
-package com.dragoonart.subtitle.finder.web.impl;
+package com.dragoonart.subtitle.finder.web;
 
-import com.dragoonart.subtitle.finder.web.AbstractSubtitleService;
+import com.dragoonart.subtitle.finder.web.impl.SubsabService;
+import com.dragoonart.subtitle.finder.web.impl.SubunacsService;
 
 public enum SubtitleProvider {
 	SUBS_SAB("http://subs.sab.bz","index.php", SubsabService.class), SUBUNACS("https://subsunacs.net", "search.php",

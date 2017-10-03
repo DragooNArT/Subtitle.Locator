@@ -122,7 +122,7 @@ public class FileNameParser implements IFileNameParser {
 	private void resolveRelease(List<String> dotSplit, Map<String, String> result) {
 		String lastEntry = dotSplit.get(dotSplit.size() - 1);
 		if (isRelease(lastEntry)) {
-			result.put(SHOW_RELEASE, lastEntry);
+			result.put(SHOW_RELEASE, lastEntry.split("-")[1]);
 			dotSplit.remove(lastEntry);
 		}
 	}

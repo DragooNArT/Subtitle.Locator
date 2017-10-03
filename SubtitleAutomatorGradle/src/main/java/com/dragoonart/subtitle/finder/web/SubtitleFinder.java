@@ -7,7 +7,6 @@ import java.util.Map;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
-import com.dragoonart.subtitle.finder.web.impl.SubtitleProvider;
 
 public class SubtitleFinder {
 
