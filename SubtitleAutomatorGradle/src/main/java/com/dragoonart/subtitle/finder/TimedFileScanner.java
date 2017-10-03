@@ -23,7 +23,7 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 	private Path rootFolder;
 
 	private String[] movieExtensions = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
-private SubtitleFinder subFinder = new SubtitleFinder();
+	private SubtitleFinder subFinder = new SubtitleFinder();
 	private List<VideoEntry> acceptedFiles = new ArrayList<>();
 
 	public TimedFileScanner(String path) {
@@ -74,6 +74,7 @@ private SubtitleFinder subFinder = new SubtitleFinder();
 				success++;
 			} else {
 				fail++;
+				System.out.println("FAIL: " + ve.getPathToFile().getFileName().toString());
 
 			}
 		}

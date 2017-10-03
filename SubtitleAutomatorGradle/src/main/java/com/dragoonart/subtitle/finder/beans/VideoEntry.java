@@ -1,4 +1,5 @@
 package com.dragoonart.subtitle.finder.beans;
+
 import java.nio.file.Path;
 import java.util.List;
 
@@ -6,17 +7,18 @@ import com.dragoonart.subtitle.finder.parsers.impl.FileNameParser;
 
 public class VideoEntry {
 
-	private Path pathToFile;
+	private final Path pathToFile;
 
 	private List<SubtitleArchiveEntry> subtitles;
-	
+
 	private String acceptableFileName = null;
 
 	private boolean subtitlesFound = false;
 	private ParsedFileName pfn;
+
 	public VideoEntry(Path pathToFile) {
 		this.pathToFile = pathToFile;
-		pfn = new ParsedFileName(resolveBestFileName());
+		pfn = new ParsedFileName(getAcceptableFileName());
 	}
 
 	public boolean isSubtitlesFound() {
@@ -26,31 +28,28 @@ public class VideoEntry {
 	public void setSubtitlesFound(boolean subtitlesFound) {
 		this.subtitlesFound = subtitlesFound;
 	}
-	
+
 	public String getAcceptableFileName() {
-		if(acceptableFileName == null) {
-			acceptableFileName = resolveBestFileName();
-		}
+		resolveBestFileName();
 		return acceptableFileName;
 	}
 
-	private String resolveBestFileName() {
+	private void resolveBestFileName() {
 		if (acceptableFileName == null) {
 			if (FileNameParser.canSplit(getFileName())) {
 				acceptableFileName = getFileName();
-			} else if(FileNameParser.canSplit(pathToFile.getParent().getFileName().toString())) {
+			} else if (FileNameParser.canSplit(pathToFile.getParent().getFileName().toString())) {
 				acceptableFileName = pathToFile.getParent().getFileName().toString();
 			} else {
 				acceptableFileName = getFileName();
 			}
 		}
-		return acceptableFileName;
 	}
 
 	public Path getPathToFile() {
 		return pathToFile;
 	}
-	
+
 	public ParsedFileName getParsedFilename() {
 		return pfn;
 	}
@@ -79,7 +78,7 @@ public class VideoEntry {
 			return false;
 		return true;
 	}
-	
+
 	public List<SubtitleArchiveEntry> getSubtitles() {
 		return subtitles;
 	}
@@ -87,17 +86,18 @@ public class VideoEntry {
 	public void setSubtitles(List<SubtitleArchiveEntry> subtitles) {
 		this.subtitles = subtitles;
 	}
-	
+
 	public boolean isProccessedForSubtitles() {
 		return subtitles != null;
 	}
 
 	public String getFileName() {
-		return pathToFile.getFileName().toString().substring(0 , pathToFile.getFileName().toString().lastIndexOf("."));
+		return pathToFile.getFileName().toString().substring(0, pathToFile.getFileName().toString().lastIndexOf("."));
 	}
 
 	@Override
 	public String toString() {
-		return new StringBuilder().append("Original file name: ").append(getFileName()).append("\n").append(getParsedFilename().toString()).toString();
+		return new StringBuilder().append("Original file name: ").append(getFileName()).append("\n")
+				.append(getParsedFilename().toString()).toString();
 	}
 }
