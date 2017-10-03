@@ -1,8 +1,12 @@
 package com.dragoonart.subtitle.finder.web.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
@@ -13,12 +17,10 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class SubunacsService extends AbstractSubtitleService {
 
-
 	@Override
 	public SubtitleProvider getServiceProvider() {
 		return SubtitleProvider.SUBUNACS;
 	}
-
 
 	@Override
 	protected MultivaluedMap<String, String> getFormData(ParsedFileName pfn, Builder builder) {
@@ -26,7 +28,7 @@ public class SubunacsService extends AbstractSubtitleService {
 
 		formData.add("m", getSearchKeyword(pfn));
 		formData.add("l", "-1");
-		if(pfn.hasYear()) {
+		if (pfn.hasYear()) {
 			formData.add("y", pfn.getYear());
 		}
 		formData.add("t", "Submit");
@@ -39,14 +41,14 @@ public class SubunacsService extends AbstractSubtitleService {
 		builder.header("Referer", "https://subsunacs.net/search.php");
 	}
 
-	@Override
-	protected boolean acceptLink(String href) {
+	private boolean acceptLink(String href) {
 		return href != null && !href.isEmpty() && href.startsWith("/subtitles/")
 				&& href.lastIndexOf('/') == (href.length() - 1);
 	}
 
 	@Override
-	protected Elements getFilteredLinks(Document siteResults) {
-		return siteResults.getElementsByClass("tooltip");
+	protected List<Element> getFilteredLinks(Document siteResults) {
+		return siteResults.getElementsByClass("tooltip").stream().filter(e -> acceptLink(e.attr("href")))
+				.collect(Collectors.toList());
 	}
 }
