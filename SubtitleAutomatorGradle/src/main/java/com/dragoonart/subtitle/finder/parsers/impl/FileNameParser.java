@@ -34,7 +34,7 @@ public class FileNameParser implements IFileNameParser {
 	}
 
 	public static boolean canSplit(String origName) {
-		if (StringUtils.countMatches(origName, ".") > 2 || StringUtils.countMatches(origName, "-") > 1 || StringUtils.countMatches(origName, " ") > 2) {
+		if (StringUtils.countMatches(origName, ".") > 0 || StringUtils.countMatches(origName, "-") > 1 || StringUtils.countMatches(origName, " ") > 2) {
 			return true;
 		}
 		return false;
@@ -74,6 +74,7 @@ public class FileNameParser implements IFileNameParser {
 		int dotMatch = StringUtils.countMatches(origName, ".");
 		int hashMatch = StringUtils.countMatches(origName, "-");
 		int spaceMatch = StringUtils.countMatches(origName, " ");
+		
 		if (dotMatch > hashMatch && dotMatch > spaceMatch) {
 			split = new LinkedList<String>(Arrays.asList(origName.split("\\.")));
 			resolveRelease(split, result);
@@ -81,7 +82,12 @@ public class FileNameParser implements IFileNameParser {
 			split = new LinkedList<String>(Arrays.asList(origName.split("-")));
 		} else if(spaceMatch > dotMatch && spaceMatch > hashMatch){
 			split = new LinkedList<String>(Arrays.asList(origName.split(" ")));
+		} else {
+			split = new LinkedList<String>();
+			split.add(origName);
+			return split;
 		}
+		
 		split = split.stream().map(e -> e.trim()).collect(Collectors.toList());
 		List<String> forRemoval = new ArrayList<>();
 		resolveResolution(split, forRemoval, result);
@@ -147,10 +153,12 @@ public class FileNameParser implements IFileNameParser {
 	
 	@Override
 	public Map<String, String> getParsedName(String origName) {
-		if (!canSplit(origName)) {
-			return Collections.emptyMap();
-		}
 		Map<String, String> result = new HashMap<String, String>();
+		if (!canSplit(origName)) {
+			result.put(IFileNameParser.SHOW_NAME, origName);
+			return result;
+		}
+	
 		List<String> dotSplit = splitAndCleanup(origName, result);
 
 		int SEindex = seasonEpisodeLookup(dotSplit, result);

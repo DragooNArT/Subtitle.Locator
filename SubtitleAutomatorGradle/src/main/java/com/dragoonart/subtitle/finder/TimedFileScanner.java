@@ -35,8 +35,11 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 	@Override
 	public void run() {
 		try {
+			// Initialize ( Find all files + create file parsers for them )
 			Files.walkFileTree(rootFolder, this);
+			// Log info about accepted files
 			logResults();
+			// Start searching and downloading subs for accepted files
 			insertExactSubMatches();
 
 		} catch (Exception e) {
@@ -49,7 +52,7 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 		List<VideoEntry> toRemove = new ArrayList<VideoEntry>();
 		acceptedFiles.parallelStream().forEach(ve -> {
 			List<SubtitleArchiveEntry> sre = sl.getSubtitleZips(ve);
-			sre.parallelStream().forEach(e -> {
+			sre.stream().forEach(e -> {
 				for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
 					System.out.println(
 							"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
@@ -86,9 +89,8 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 		if (release != null) {
 			ParsedFileName pfn = null;
 			try {
-				pfn = new ParsedFileName(
-						entry.getKey().indexOf(".") > -1 ? entry.getKey().substring(0, entry.getKey().lastIndexOf("."))
-								: entry.getKey());
+				pfn = new ParsedFileName(entry.getKey().indexOf(".") > -1
+						? entry.getKey().substring(0, entry.getKey().lastIndexOf(".")) : entry.getKey());
 			} catch (Throwable t) {
 				System.out.println("Bad entry: " + entry.getKey());
 				throw t;
