@@ -1,6 +1,5 @@
 package com.dragoonart.subtitle.finder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -17,15 +16,14 @@ import org.apache.commons.lang.StringUtils;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
-import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
+import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 
 public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnable {
 
 	private Path rootFolder;
 
-	private SubtitleLocator sl = new SubtitleLocator();
 	private String[] movieExtensions = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
-
+private SubtitleFinder subFinder = new SubtitleFinder();
 	private List<VideoEntry> acceptedFiles = new ArrayList<>();
 
 	public TimedFileScanner(String path) {
@@ -49,22 +47,22 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 	}
 
 	private void insertExactSubMatches() {
-		List<VideoEntry> toRemove = new ArrayList<VideoEntry>();
+		List<VideoEntry> forRemoval = new ArrayList<VideoEntry>();
 		acceptedFiles.parallelStream().forEach(ve -> {
-			List<SubtitleArchiveEntry> sre = sl.getSubtitleZips(ve);
+			List<SubtitleArchiveEntry> sre = subFinder.lookupEverywhere(ve.getParsedFilename());
 			sre.stream().forEach(e -> {
 				for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
 					System.out.println(
 							"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
-					if (subtitleExactMatch(ve, entry)) {
-						toRemove.add(ve);
+					if (videoHasSubtitles(ve, entry)) {
+						forRemoval.add(ve);
 						break;
 					}
 				}
 			});
 		});
 		// remove files for which an exact match has been found
-		acceptedFiles.removeAll(toRemove);
+		acceptedFiles.removeAll(forRemoval);
 	}
 
 	private void logResults() {
@@ -84,7 +82,7 @@ public class TimedFileScanner extends SimpleFileVisitor<Path> implements Runnabl
 		System.out.println("Fail: " + fail);
 	}
 
-	private boolean subtitleExactMatch(VideoEntry ve, Entry<String, Path> entry) {
+	private boolean videoHasSubtitles(VideoEntry ve, Entry<String, Path> entry) {
 		String release = ve.getParsedFilename().getRelease();
 		if (release != null) {
 			ParsedFileName pfn = null;
