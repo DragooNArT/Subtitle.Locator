@@ -27,7 +27,7 @@ public class SubtitleArchiveEntry {
 	public Map<String, Path> getSubtitleEntries() {
 		if (subtitleEntries.isEmpty() && Files.exists(pathToSubtitle)) {
 			try {
-				subtitleEntries.putAll(SubtitleFileUtils.unpackSubs(pathToSubtitle));
+				subtitleEntries.putAll(SubtitleFileUtils.unpackSubs(pathToSubtitle,pathToSubtitle.getParent().getParent()));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

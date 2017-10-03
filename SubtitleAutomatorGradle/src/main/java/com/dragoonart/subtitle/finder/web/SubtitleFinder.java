@@ -26,7 +26,12 @@ public class SubtitleFinder {
 	public List<SubtitleArchiveEntry> lookupEverywhere(ParsedFileName pfn) {
 		List<SubtitleArchiveEntry> result = new ArrayList<SubtitleArchiveEntry>();
 		for (AbstractSubtitleService ss : servicesList.values()) {
+			try {
 			result.addAll(ss.getSubtitles(pfn));
+			} catch(Exception e) {
+				System.out.println("Failed too lookup subs in: "+ss.getServiceProvider().getBaseUrl());
+				e.printStackTrace();
+			}
 		}
 		return result;
 	}
