@@ -1,0 +1,41 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+sourceCompatibility = 1.8
+version = '1.0'
+
+// Apply the java-library plugin to add support for Java Library
+apply plugin: 'java-library'
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+        compile project(':subtitle-core')
+}
+
+dependencies {
+
+}
+sourceSets {
+    main {
+		resources {
+            srcDir 'resources'
+        }
+    }
+}
+startScripts {
+	applicationName 'subtitle-finder'
+	mainClassName 'com.dragoonart.subtitle.finder.Start'
+}
+
+installDist {
+	destinationDir = new File('./../dist')
+	preserve {
+        include 'itracs/**' , 'userdata/**'
+	}
+}
+
+
