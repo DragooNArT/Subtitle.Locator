@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.effect.GaussianBlur?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.paint.LinearGradient?>
+<?import javafx.scene.paint.Stop?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<Pane fx:id="choosePane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onMouseClicked="#browseDirs" prefHeight="480.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dragoonart.subtitle.finder.ui.controllers.ChooseLocationController">
+   <cursor>
+            <Cursor fx:constant="HAND" />
+         </cursor>
+   <children>
+      <Text layoutX="104.0" layoutY="256.0" lineSpacing="1.0" opacity="0.32" strokeType="OUTSIDE" strokeWidth="0.0" text="Choose a directory..." wrappingWidth="432.00829696655273">
+         <font>
+            <Font name="Verdana" size="41.0" />
+         </font>
+         
+         <effect>
+            <GaussianBlur radius="1.0" />
+         </effect>
+         <stroke>
+            <LinearGradient endX="1.0" endY="1.0">
+               <stops>
+                  <Stop color="BLACK" />
+                  <Stop color="WHITE" offset="1.0" />
+               </stops>
+            </LinearGradient>
+         </stroke>
+      </Text>
+   </children>
+</Pane>

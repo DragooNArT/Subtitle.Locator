@@ -14,11 +14,9 @@ repositories {
 
 dependencies {
         compile project(':subtitle-core')
+        
 }
 
-dependencies {
-
-}
 sourceSets {
     main {
 		resources {
@@ -28,7 +26,7 @@ sourceSets {
 }
 startScripts {
 	applicationName 'subtitle-finder'
-	mainClassName 'com.dragoonart.subtitle.finder.Start'
+	mainClassName 'com.dragoonart.subtitle.finder.ui.Main'
 }
 
 installDist {
@@ -37,5 +35,3 @@ installDist {
         include 'itracs/**' , 'userdata/**'
 	}
 }
-
-
