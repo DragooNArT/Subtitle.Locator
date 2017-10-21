@@ -6,30 +6,32 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ResourceBundle;
-
-import javax.swing.event.DocumentEvent.EventType;
+import java.util.Set;
 
 import com.dragoonart.subtitle.finder.SubtitleFileScanner;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
+import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.gluonhq.charm.glisten.control.CharmListCell;
 import com.gluonhq.charm.glisten.control.CharmListView;
 import com.gluonhq.charm.glisten.control.ListTile;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ListView;
 import javafx.stage.DirectoryChooser;
 
 public class MainPanelController {
 
 	private DirectoryChooser dirChooser = new DirectoryChooser();
+	private SubtitleFinder subFinder = new SubtitleFinder();
 	private VideoSelectedListener videoSelListener;
 	@FXML
 	private ResourceBundle resources;
@@ -65,8 +67,16 @@ public class MainPanelController {
 
 	private void loadFolderVideos(Path toFolder) {
 		subFscanner = new SubtitleFileScanner(toFolder);
-		ObservableList<VideoEntry> list = FXCollections.observableArrayList(subFscanner.getFolderVideos());
-		videosList.setItems(list);
+		Set<VideoEntry> veSet = subFscanner.getFolderVideos();
+		ObservableList<VideoEntry> list = FXCollections.observableArrayList();
+		for(VideoEntry entry : veSet) {
+			new Thread(() -> {
+				subFinder.lookupEverywhere(entry);
+				Platform.runLater(() -> list.add(entry));
+				Platform.runLater(() -> videosList.setItems(list));
+			}).start();
+		}
+		
 		videoSelListener = new VideoSelectedListener(this);
 		videosList.selectedItemProperty().addListener(videoSelListener);
 	}
@@ -95,26 +105,35 @@ public class MainPanelController {
 	private void listCell() {
 		videosList.setCellFactory(p -> new CharmListCell<VideoEntry>() {
 			@Override
-			public void updateItem(VideoEntry item, boolean empty) {
-				super.updateItem(item, empty);
+			public void updateItem(VideoEntry ve, boolean empty) {
+				super.updateItem(ve, empty);
+				loadVideoTIle(ve);
+			}
 
-				if (item != null && !empty) {
+			private void loadVideoTIle(VideoEntry ve) {
 					ListTile tile = new ListTile();
-					if (item.getFileName().equals(item.getAcceptableFileName())) {
-						tile.textProperty().addAll("Name: " + item.getFileName());
+					if(ve.getSubtitles().isEmpty()) {
+						tile.setStyle("-fx-background-color: #f9f7f7;");
 					} else {
-						tile.textProperty().addAll("Name: " + item.getAcceptableFileName() + "/" + item.getFileName());
+						tile.setStyle("-fx-background-color: #eff9ef;");
 					}
+					
+					if (ve.getFileName().equals(ve.getAcceptableFileName())) {
+						tile.textProperty().add(ve.getFileName());
+					} else {
+						tile.textProperty().add(ve.getAcceptableFileName() + "/" + ve.getFileName());
+					}
+					SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+
+					String dateAdded = sdf.format(ve.getPathToFile().toFile().lastModified());
+					
 					// final Image image = USStates.getImage(item.getFlag());
 					// if(image!=null){
 					// tile.setPrimaryGraphic(new ImageView(image));
 					// }
 					setText(null);
 					setGraphic(tile);
-				} else {
-					setText(null);
-					setGraphic(null);
-				}
+					
 			}
 		});
 	}
