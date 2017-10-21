@@ -45,8 +45,8 @@ public abstract class AbstractSubtitleService {
 
 		ClientResponse resp = builder.entity(getFormData(pfn, builder), MediaType.APPLICATION_FORM_URLENCODED)
 				.post(ClientResponse.class);
-		
-		//do the work
+
+		// do the work
 		List<SubtitleArchiveEntry> subZips = getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)));
 
 		System.out.println("Found " + subZips.size() + " for search: \"" + searchWord + "\" in site: "
@@ -117,17 +117,17 @@ public abstract class AbstractSubtitleService {
 		List<SubtitleArchiveEntry> results = new ArrayList<SubtitleArchiveEntry>();
 		for (Element link : getFilteredLinks(siteResults)) {
 			String href = link.attr("href");
-			//append baseUrl if it's missing
+			// append baseUrl if it's missing
 			if (!href.startsWith(getServiceProvider().getBaseUrl())) {
 				href = getServiceProvider().getBaseUrl() + href;
 			}
 
 			// this is how to get the zip name
 			String subZipName = link.textNodes().get(0).toString();
-			//download and add to results
+			// download and add to results
 			try {
 				Path subtitleZip = downloadSubtitleArchive(subZipName, href);
-				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(href, subtitleZip);
+				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href, subtitleZip);
 				results.add(entry);
 			} catch (ParseException | IOException e) {
 				e.printStackTrace();

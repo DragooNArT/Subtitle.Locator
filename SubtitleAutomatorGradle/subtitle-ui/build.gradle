@@ -10,10 +10,15 @@ apply plugin: 'java-library'
 // In this section you declare where to find the dependencies of your project
 repositories {
     mavenCentral()
+     maven {
+    		url 'http://nexus.gluonhq.com/nexus/content/repositories/releases/'
+  	   }
 }
 
 dependencies {
-        compile project(':subtitle-core')
+       compile project(':subtitle-core')
+      
+       compile "com.gluonhq:charm:4.4.0"
         
 }
 

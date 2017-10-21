@@ -26,6 +26,5 @@ dependencies {
  compile group: 'commons-lang', name: 'commons-lang', version: '2.6'
  compile group: 'org.zeroturnaround', name: 'zt-zip', version: '1.12'
  compile group: 'com.github.junrar', name: 'junrar', version: '0.7'
- 
 }
 

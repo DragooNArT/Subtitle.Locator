@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public enum PreferencesManager {
 	INSTANCE();
@@ -60,6 +61,12 @@ public enum PreferencesManager {
 			}
 		}
 		return paths;
+	}
+	
+	public void removeLocationPath(Path locPath) throws IOException {
+		List<String> filtered = Files.lines(prefLocFile).filter(x -> x.equals(locPath))
+				.collect(Collectors.toList());
+		Files.write(prefLocFile, filtered);
 	}
 
 	public void addLocationPath(Path locPath) {

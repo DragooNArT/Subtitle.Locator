@@ -1,7 +1,8 @@
 package com.dragoonart.subtitle.finder.beans;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.dragoonart.subtitle.finder.parsers.impl.FileNameParser;
 
@@ -9,15 +10,19 @@ public class VideoEntry {
 
 	private final Path pathToFile;
 
-	private List<SubtitleArchiveEntry> subtitles;
+	private final Path rootDir;
+
+	private Set<SubtitleArchiveEntry> subtitles;
 
 	private String acceptableFileName = null;
 
 	private boolean subtitlesFound = false;
+
 	private ParsedFileName pfn;
 
-	public VideoEntry(Path pathToFile) {
+	public VideoEntry(Path pathToFile, Path rootDir) {
 		this.pathToFile = pathToFile;
+		this.rootDir = rootDir;
 		pfn = new ParsedFileName(getAcceptableFileName());
 	}
 
@@ -50,6 +55,10 @@ public class VideoEntry {
 		return pathToFile;
 	}
 
+	public Path getRootDir() {
+		return rootDir;
+	}
+
 	public ParsedFileName getParsedFilename() {
 		return pfn;
 	}
@@ -79,12 +88,18 @@ public class VideoEntry {
 		return true;
 	}
 
-	public List<SubtitleArchiveEntry> getSubtitles() {
+	public Set<SubtitleArchiveEntry> getSubtitles() {
 		return subtitles;
 	}
 
-	public void setSubtitles(List<SubtitleArchiveEntry> subtitles) {
+	public void setSubtitles(Set<SubtitleArchiveEntry> subtitles) {
 		this.subtitles = subtitles;
+	}
+
+	public void addSubtitles(Set<SubtitleArchiveEntry> subtitles) {
+		if (this.subtitles == null) {
+			this.subtitles = new HashSet<SubtitleArchiveEntry>();
+		}
 	}
 
 	public boolean isProccessedForSubtitles() {
