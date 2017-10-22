@@ -7,27 +7,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
-import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.cache.CacheManager;
 import com.dragoonart.subtitle.finder.cache.LocationCache;
-import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 
-public class SubtitleFileScanner extends SimpleFileVisitor<Path> implements Runnable {
+public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 
 	private Path rootFolder;
 
-	private String[] movieExtensions = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
-	private SubtitleFinder subFinder = new SubtitleFinder();
+	private static final String[] MOVIE_EXT = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
 	private Set<VideoEntry> acceptedFiles = new HashSet<>();
 	private LocationCache locCache;
 
@@ -45,6 +40,12 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> implements Runn
 		loadFolderVideos();
 		return acceptedFiles;
 	}
+	
+	public void setScanFolder(Path rootFolder) {
+		this.rootFolder = rootFolder;
+		acceptedFiles.clear();
+		locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
+	}
 
 	private void loadFolderVideos() {
 		try {
@@ -55,40 +56,6 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> implements Runn
 		}
 	}
 
-	@Override
-	public void run() {
-		try {
-			// Initialize ( Find all files + create file parsers for them )
-			Files.walkFileTree(rootFolder, this);
-			// Log info about accepted files
-			logResults();
-			// Start searching and downloading subs for accepted files
-			insertExactSubMatches();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	private void insertExactSubMatches() {
-		List<VideoEntry> forRemoval = new ArrayList<VideoEntry>();
-		acceptedFiles.parallelStream().forEach(ve -> {
-			Set<SubtitleArchiveEntry> sre = subFinder.lookupEverywhere(ve);
-			sre.stream().forEach(e -> {
-				for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
-					System.out.println(
-							"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
-					if (areSuitableSubtitles(ve, entry)) {
-						forRemoval.add(ve);
-						break;
-					}
-				}
-			});
-		});
-		// remove files for which an exact match has been found
-		acceptedFiles.removeAll(forRemoval);
-	}
 
 	private void logResults() {
 		int success = 0;
@@ -158,7 +125,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> implements Runn
 	}
 
 	private boolean acceptFile(Path file) {
-		for (String ext : movieExtensions) {
+		for (String ext : MOVIE_EXT) {
 			String fileName = file.getFileName().toString();
 			if (fileName.endsWith("." + ext)) {
 				if(hasSubs(file) || isSample(file)) {

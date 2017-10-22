@@ -101,6 +101,10 @@ public class VideoEntry {
 			this.subtitles = new HashSet<SubtitleArchiveEntry>();
 		}
 	}
+	
+	public boolean hasSubtitles() {
+		return !subtitles.isEmpty();
+	}
 
 	public boolean isProccessedForSubtitles() {
 		return subtitles != null;
