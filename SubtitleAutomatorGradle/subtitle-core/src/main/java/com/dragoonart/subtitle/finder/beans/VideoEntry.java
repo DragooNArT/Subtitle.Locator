@@ -101,7 +101,7 @@ public class VideoEntry {
 			this.subtitles = new HashSet<SubtitleArchiveEntry>();
 		}
 	}
-	
+
 	public boolean hasSubtitles() {
 		return !subtitles.isEmpty();
 	}
@@ -118,5 +118,15 @@ public class VideoEntry {
 	public String toString() {
 		return new StringBuilder().append("Original file name: ").append(getFileName()).append("\n")
 				.append(getParsedFilename().toString()).toString();
+	}
+
+	public int compareTo(VideoEntry p2) {
+		if (pathToFile.toFile().lastModified() < p2.pathToFile.toFile().lastModified()) {
+			return 1;
+		} else if (pathToFile.toFile().lastModified() == p2.pathToFile.toFile().lastModified()) {
+			return 0;
+		}
+		return -1;
+
 	}
 }

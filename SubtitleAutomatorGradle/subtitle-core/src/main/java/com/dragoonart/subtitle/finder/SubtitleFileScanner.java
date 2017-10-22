@@ -23,7 +23,8 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 	private Path rootFolder;
 
 	private static final String[] MOVIE_EXT = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
-	private Set<VideoEntry> acceptedFiles = new HashSet<>();
+	private Set<VideoEntry> subtitlessVideos = new HashSet<>();
+	private Set<VideoEntry> subtitledVideos = new HashSet<>();
 	private LocationCache locCache;
 
 	public SubtitleFileScanner(String path) {
@@ -38,12 +39,12 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 
 	public Set<VideoEntry> getFolderVideos() {
 		loadFolderVideos();
-		return acceptedFiles;
+		return subtitlessVideos;
 	}
 	
 	public void setScanFolder(Path rootFolder) {
 		this.rootFolder = rootFolder;
-		acceptedFiles.clear();
+		subtitlessVideos.clear();
 		locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
 	}
 
@@ -60,7 +61,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 	private void logResults() {
 		int success = 0;
 		int fail = 0;
-		for (VideoEntry ve : acceptedFiles) {
+		for (VideoEntry ve : subtitlessVideos) {
 			if (ve.getParsedFilename().hasShowName()) {
 				System.out.println(ve.toString());
 				success++;
@@ -70,7 +71,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 
 			}
 		}
-		System.out.println("Total  : " + acceptedFiles.size());
+		System.out.println("Total  : " + subtitlessVideos.size());
 		System.out.println("Success: " + success);
 		System.out.println("Fail: " + fail);
 	}
@@ -179,7 +180,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 					locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
 				}
 			}
-			acceptedFiles.add(vfb);
+			subtitlessVideos.add(vfb);
 		}
 		return super.visitFile(file, attrs);
 	}

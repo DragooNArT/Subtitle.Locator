@@ -6,17 +6,16 @@ import java.util.ResourceBundle;
 
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
+import com.dragoonart.subtitle.finder.ui.managers.MainPanelManager;
 import com.gluonhq.charm.glisten.control.CharmListView;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
-import javafx.stage.DirectoryChooser;
+import javafx.scene.text.Text;
 
 public class MainPanelController {
-
-	private DirectoryChooser dirChooser = new DirectoryChooser();
 
 	private VideoSelectedListener videoSelListener;
 
@@ -37,18 +36,53 @@ public class MainPanelController {
 	@FXML
 	private CharmListView<VideoEntry, ?> videosList;
 
+	@FXML
+	private Text movieName;
+
+	@FXML
+	private Text Year;
+
+	@FXML
+	private Text Resolution;
+
+	@FXML
+	private Text Release;
+
+	@FXML
+	private CharmListView<Path, ?> subtitlesList;
+
 	public CharmListView<VideoEntry, ?> getVideosList() {
 		return videosList;
+	}
+
+	public CharmListView<Path, ?> getSubtitlesList() {
+		return subtitlesList;
 	}
 
 	public ChoiceBox<Path> getFoldersList() {
 		return foldersList;
 	}
 
+	public Text getMovieNameField() {
+		return movieName;
+	}
+
+	public Text getYearField() {
+		return Year;
+	}
+
+	public Text getResolutionField() {
+		return Resolution;
+	}
+
+	public Text getReleaseField() {
+		return Release;
+	}
+
 	@FXML
 	void addFolderLocation(ActionEvent event) {
 		if (event.getSource() == addFolder) {
-			manager.loadFolderVideos(dirChooser.showDialog(addFolder.getScene().getWindow()));
+			manager.loadFolderVideos(manager.getDirChooser().showDialog(addFolder.getScene().getWindow()));
 		}
 	}
 
@@ -56,7 +90,6 @@ public class MainPanelController {
 	void initialize() {
 		assert foldersList != null : "fx:id=\"foldersList\" was not injected: check your FXML file 'MainPanel.fxml'.";
 		manager = new MainPanelManager(this);
-		dirChooser.setTitle("Choose Videos Directory");
 		manager.loadLocations();
 
 		// select first entry
@@ -64,12 +97,10 @@ public class MainPanelController {
 		// load videos for that entry
 		manager.loadFolderVideos(foldersList.getSelectionModel().getSelectedItem());
 		manager.initVideosListCell();
-
+		manager.initSubtitlesListCell();
 		videoSelListener = new VideoSelectedListener(manager);
 		videosList.selectedItemProperty().addListener(videoSelListener);
 
 	}
-
-	
 
 }
