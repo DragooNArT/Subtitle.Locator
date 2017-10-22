@@ -22,7 +22,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 
 	private Path rootFolder;
 
-	private static final String[] MOVIE_EXT = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", "" };
+	private static final String[] MOVIE_EXT = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", ".ts" };
 	private Set<VideoEntry> subtitlessVideos = new HashSet<>();
 	private Set<VideoEntry> subtitledVideos = new HashSet<>();
 	private LocationCache locCache;
@@ -115,7 +115,18 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		}
 		return false;
 	}
-
+	
+	public void insertExactSubMatches(VideoEntry ve) {
+		ve.getSubtitles().stream().forEach(e -> {
+			for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
+				System.out.println(
+						"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
+				if (areSuitableSubtitles(ve, entry)) {
+					break;
+				}
+			}
+		});
+	}
 	private void copySubtitleToMovie(Path newFilePath, Entry<String, Path> entry) throws IOException {
 		// remove the old subtitle file
 		if (Files.exists(newFilePath)) {

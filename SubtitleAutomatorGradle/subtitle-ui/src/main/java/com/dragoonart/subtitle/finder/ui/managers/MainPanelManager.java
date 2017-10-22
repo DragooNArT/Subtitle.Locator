@@ -83,6 +83,7 @@ public class MainPanelManager extends BaseManager {
 		for (VideoEntry entry : veSet) {
 			new Thread(() -> {
 				subFinder.lookupEverywhere(entry);
+				subFscanner.insertExactSubMatches(entry);
 				Platform.runLater(() -> { list.add(entry); list.sort( (VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));});
 				Platform.runLater(() -> panelCtrl.getVideosList().setItems(list));
 			}).start();

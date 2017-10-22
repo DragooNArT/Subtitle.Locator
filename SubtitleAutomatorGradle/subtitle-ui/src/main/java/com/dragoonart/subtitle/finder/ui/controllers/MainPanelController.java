@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.ResourceBundle;
 
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
+import com.dragoonart.subtitle.finder.ui.listeners.SubtitleSelectedListener;
 import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
 import com.dragoonart.subtitle.finder.ui.managers.MainPanelManager;
 import com.gluonhq.charm.glisten.control.CharmListView;
@@ -18,7 +19,7 @@ import javafx.scene.text.Text;
 public class MainPanelController {
 
 	private VideoSelectedListener videoSelListener;
-
+	private SubtitleSelectedListener subListener;
 	private MainPanelManager manager;
 
 	@FXML
@@ -99,6 +100,8 @@ public class MainPanelController {
 		manager.initVideosListCell();
 		manager.initSubtitlesListCell();
 		videoSelListener = new VideoSelectedListener(manager);
+		subListener = new SubtitleSelectedListener(manager);
+		subtitlesList.selectedItemProperty().addListener(subListener);
 		videosList.selectedItemProperty().addListener(videoSelListener);
 
 	}
