@@ -116,7 +116,18 @@ public class FileNameParser implements IFileNameParser {
 		}
 
 	}
+	private int resolveYearIndex(List<String> split) {
+		int index = -1;
+		for (int i = 0;i<split.size();i++) {
+			Matcher matcher = matchYear.matcher(split.get(i));
+			if (matcher.matches() && Integer.parseInt(split.get(i)) > 1970) {
+				index = i;
+				break;
+			}
+		}
+		return index;
 
+	}
 	private void resolveForRemoval(List<String> dotSplit, List<String> forRemoval, Map<String, String> result) {
 		for (String entry : dotSplit) {
 			if (isForRemoval(entry)) {
@@ -167,6 +178,9 @@ public class FileNameParser implements IFileNameParser {
 		List<String> dotSplit = splitAndCleanup(origName, result);
 
 		int SEindex = seasonEpisodeLookup(dotSplit, result);
+		if(SEindex <0 ) {
+			SEindex = resolveYearIndex(dotSplit);
+		}
 		showNameLookup(dotSplit, SEindex, result);
 		return result;
 	}

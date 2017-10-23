@@ -14,6 +14,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
+import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.cache.CacheManager;
 import com.dragoonart.subtitle.finder.cache.LocationCache;
@@ -112,7 +113,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		if (ve.getAcceptableFileName().equals(entry.getKey())) {
 			try {
 				Path newFilePath = ve.getPathToFile().getParent().resolve(entry.getValue().getFileName());
-				copySubtitleToMovie(newFilePath, entry);
+				copySubtitleToMovie(newFilePath, entry.getValue());
 				return true;
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
@@ -122,24 +123,44 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		return false;
 	}
 	
-	public void insertExactSubMatches(VideoEntry ve) {
+	public void autoApplySubtitles(VideoEntry ve) {
+		//TODO implement auto application in any case there's valid subs
+//		boolean foundSuitable = false;
 		ve.getSubtitles().stream().forEach(e -> {
+			
 			for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
 				System.out.println(
 						"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
 				if (areSuitableSubtitles(ve, entry)) {
+//					foundSuitable = true;
 					break;
 				}
 			}
+			
 		});
+//		//if can't approximate subtitles, apply the first entry
+//		if(!foundSuitable && !ve.getSubtitles().isEmpty()) {
+//			applyFirstFound(ve, ve.getSubtitles().iterator().next());
+//		}
 	}
-	private void copySubtitleToMovie(Path newFilePath, Entry<String, Path> entry) throws IOException {
+
+	private void applyFirstFound(VideoEntry ve, SubtitleArchiveEntry e) {
+		Path entry = e.getSubtitleEntries().get(0);
+		Path newFilePath = ve.getPathToFile().getParent().resolve(ve.getFileName().concat(".srt"));
+		try {
+			copySubtitleToMovie(newFilePath, entry);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+	private void copySubtitleToMovie(Path newFilePath, Path entry) throws IOException {
 		// remove the old subtitle file
 		if (Files.exists(newFilePath)) {
 			Files.delete(newFilePath);
 		}
 		// place the new subtitle file
-		Files.copy(entry.getValue(), newFilePath);
+		Files.copy(entry, newFilePath);
 	}
 
 	private boolean acceptFile(Path file) {

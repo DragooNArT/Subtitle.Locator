@@ -86,7 +86,8 @@ public class MainPanelManager extends BaseManager {
 	private Set<VideoEntry> veSet = new HashSet<VideoEntry>();
 
 	public void loadFolderVideos(Path toFolder) {
-
+		//reset videos
+		veSet.clear();
 		setRootFolder(toFolder);
 		stpex.scheduleAtFixedRate(() -> {
 
@@ -104,7 +105,7 @@ public class MainPanelManager extends BaseManager {
 			for (VideoEntry entry : temp) {
 				new Thread(() -> {
 					subFinder.lookupEverywhere(entry);
-					subFscanner.insertExactSubMatches(entry);
+					subFscanner.autoApplySubtitles(entry);
 					Platform.runLater(() -> {
 						list.add(entry);
 						list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
@@ -123,6 +124,7 @@ public class MainPanelManager extends BaseManager {
 		}
 		Path toFolder = Paths.get(folder.toURI());
 		if (Files.exists(toFolder)) {
+			
 			PreferencesManager.INSTANCE.addLocationPath(toFolder);
 			panelCtrl.getFoldersList().getItems().add(0, toFolder);
 			// select first entry
@@ -200,7 +202,7 @@ public class MainPanelManager extends BaseManager {
 		cleanVideoMeta();
 		ParsedFileName pfn = value.getParsedFilename();
 
-		if (pfn.hasShowName()) {
+		if (pfn.isEpisodic()) {
 			panelCtrl.getMovieNameField()
 					.setText("Show: " + pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
 		} else {
@@ -208,6 +210,9 @@ public class MainPanelManager extends BaseManager {
 		}
 		if (pfn.hasResolution()) {
 			panelCtrl.getResolutionField().setText("Resolution: " + pfn.getResolution());
+		}
+		if (pfn.hasYear()) {
+			panelCtrl.getYearField().setText("Year: " + pfn.getYear());
 		}
 		if (pfn.hasRelease()) {
 			panelCtrl.getReleaseField().setText("Release: " + pfn.getRelease());

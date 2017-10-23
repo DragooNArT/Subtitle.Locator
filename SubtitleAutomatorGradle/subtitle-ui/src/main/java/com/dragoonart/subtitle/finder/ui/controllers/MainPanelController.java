@@ -10,10 +10,13 @@ import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
 import com.dragoonart.subtitle.finder.ui.managers.MainPanelManager;
 import com.gluonhq.charm.glisten.control.CharmListView;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.SingleSelectionModel;
 import javafx.scene.text.Text;
 
 public class MainPanelController {
@@ -86,7 +89,15 @@ public class MainPanelController {
 			manager.observeFolderVideos(manager.getDirChooser().showDialog(addFolder.getScene().getWindow()));
 		}
 	}
-
+	private void addVideosFolderListener() {
+		foldersList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Path>() {
+			@Override
+			public void changed(ObservableValue<? extends Path> observable, Path oldValue, Path newValue) {
+				manager.observeFolderVideos(newValue.toFile());
+			}
+			
+		});
+	}
 	@FXML
 	void initialize() {
 		assert foldersList != null : "fx:id=\"foldersList\" was not injected: check your FXML file 'MainPanel.fxml'.";
@@ -104,6 +115,6 @@ public class MainPanelController {
 		subListener = new SubtitleSelectedListener(manager);
 		subtitlesList.selectedItemProperty().addListener(subListener);
 		videosList.selectedItemProperty().addListener(videoSelListener);
-		
+		addVideosFolderListener();
 	}
 }
