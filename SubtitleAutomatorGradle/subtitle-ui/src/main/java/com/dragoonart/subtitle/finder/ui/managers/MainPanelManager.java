@@ -7,14 +7,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.dragoonart.subtitle.finder.SubtitleFileScanner;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
+import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
 import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.gluonhq.charm.glisten.control.CharmListCell;
@@ -41,10 +45,14 @@ public class MainPanelManager extends BaseManager {
 
 	public void loadSubtitles(Set<SubtitleArchiveEntry> subtitles) {
 		List<Path> result = new ArrayList<>();
-		for(SubtitleArchiveEntry archE : subtitles) {
+		for (SubtitleArchiveEntry archE : subtitles) {
 			result.addAll(archE.getSubtitleEntries().values());
 		}
 		panelCtrl.getSubtitlesList().setItems(FXCollections.observableArrayList(result));
+	}
+
+	public Path getSelectedVideo() {
+		return panelCtrl.getVideosList().getSelectedItem().getPathToFile();
 	}
 
 	public void setNoSubtitles(VideoEntry value) {
@@ -74,23 +82,42 @@ public class MainPanelManager extends BaseManager {
 		}
 	}
 
+	private ScheduledThreadPoolExecutor stpex = new ScheduledThreadPoolExecutor(1);
+	private Set<VideoEntry> veSet = new HashSet<VideoEntry>();
+
 	public void loadFolderVideos(Path toFolder) {
 
 		setRootFolder(toFolder);
-		Set<VideoEntry> veSet = subFscanner.getFolderVideos();
-		ObservableList<VideoEntry> list = FXCollections.observableArrayList();
-		list.sort( (VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
-		for (VideoEntry entry : veSet) {
-			new Thread(() -> {
-				subFinder.lookupEverywhere(entry);
-				subFscanner.insertExactSubMatches(entry);
-				Platform.runLater(() -> { list.add(entry); list.sort( (VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));});
-				Platform.runLater(() -> panelCtrl.getVideosList().setItems(list));
-			}).start();
-		}
+		stpex.scheduleAtFixedRate(() -> {
+
+			Set<VideoEntry> temp = subFscanner.getFolderVideos();
+			temp.addAll(subFscanner.getFolderSubtitledVideos());
+			for (VideoEntry ve : veSet) {
+				if (temp.contains(ve)) {
+					temp.remove(ve);
+				}
+			}
+			
+			ObservableList<VideoEntry> list = FXCollections.observableArrayList();
+			list.addAll(veSet);
+			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+			for (VideoEntry entry : temp) {
+				new Thread(() -> {
+					subFinder.lookupEverywhere(entry);
+					subFscanner.insertExactSubMatches(entry);
+					Platform.runLater(() -> {
+						list.add(entry);
+						list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+					});
+					Platform.runLater(() -> panelCtrl.getVideosList().setItems(list));
+				}).start();
+			}
+			veSet.addAll(temp);
+		}, 0, 5, TimeUnit.SECONDS);
+
 	}
 
-	public void loadFolderVideos(File folder) {
+	public void observeFolderVideos(File folder) {
 		if (folder == null) {
 			return;
 		}
@@ -105,12 +132,14 @@ public class MainPanelManager extends BaseManager {
 		}
 	}
 
-	public void initVideosListCell() {
+	public void initVideosListCell(VideoSelectedListener videoSelListener) {
 		panelCtrl.getVideosList().setCellFactory(p -> new CharmListCell<VideoEntry>() {
+
 			@Override
 			public void updateItem(VideoEntry ve, boolean empty) {
 				super.updateItem(ve, empty);
 				loadVideoTIle(ve);
+				this.setOnMouseClicked(videoSelListener);
 			}
 
 			private void loadVideoTIle(VideoEntry ve) {
@@ -124,11 +153,11 @@ public class MainPanelManager extends BaseManager {
 
 				String dateAdded = sdf.format(ve.getPathToFile().toFile().lastModified());
 				if (ve.getFileName().equals(ve.getAcceptableFileName())) {
-					tile.textProperty().add(ve.getFileName() + " "  + dateAdded);
+					tile.textProperty().add(ve.getFileName() + " " + dateAdded);
 				} else {
-					tile.textProperty().add(ve.getAcceptableFileName() + "/" + ve.getFileName()  + " "  + dateAdded);
+					tile.textProperty().add(ve.getAcceptableFileName() + "/" + ve.getFileName() + " " + dateAdded);
 				}
-				
+
 				// final Image image = USStates.getImage(item.getFlag());
 				// if(image!=null){
 				// tile.setPrimaryGraphic(new ImageView(image));
@@ -139,7 +168,7 @@ public class MainPanelManager extends BaseManager {
 			}
 		});
 	}
-	
+
 	public void initSubtitlesListCell() {
 		panelCtrl.getSubtitlesList().setCellFactory(p -> new CharmListCell<Path>() {
 			@Override
@@ -150,9 +179,8 @@ public class MainPanelManager extends BaseManager {
 
 			private void loadVideoTIle(Path ve) {
 				ListTile tile = new ListTile();
-			
+
 				tile.textProperty().add(ve.getFileName().toString());
-		
 
 				setText(null);
 				setGraphic(tile);
@@ -160,7 +188,7 @@ public class MainPanelManager extends BaseManager {
 			}
 		});
 	}
-	
+
 	private void cleanVideoMeta() {
 		panelCtrl.getMovieNameField().setText("Show: ");
 		panelCtrl.getResolutionField().setText("Resolution: ");
@@ -171,16 +199,17 @@ public class MainPanelManager extends BaseManager {
 	public void loadVideoMeta(VideoEntry value) {
 		cleanVideoMeta();
 		ParsedFileName pfn = value.getParsedFilename();
-		
+
 		if (pfn.hasShowName()) {
-			panelCtrl.getMovieNameField().setText("Show: " + pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
+			panelCtrl.getMovieNameField()
+					.setText("Show: " + pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
 		} else {
 			panelCtrl.getMovieNameField().setText("Show: " + pfn.getShowName());
 		}
-		if(pfn.hasResolution()) {
+		if (pfn.hasResolution()) {
 			panelCtrl.getResolutionField().setText("Resolution: " + pfn.getResolution());
 		}
-		if(pfn.hasRelease()) {
+		if (pfn.hasRelease()) {
 			panelCtrl.getReleaseField().setText("Release: " + pfn.getRelease());
 		}
 	}

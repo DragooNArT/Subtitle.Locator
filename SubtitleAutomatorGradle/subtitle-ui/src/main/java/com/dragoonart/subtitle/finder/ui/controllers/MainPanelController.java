@@ -83,7 +83,7 @@ public class MainPanelController {
 	@FXML
 	void addFolderLocation(ActionEvent event) {
 		if (event.getSource() == addFolder) {
-			manager.loadFolderVideos(manager.getDirChooser().showDialog(addFolder.getScene().getWindow()));
+			manager.observeFolderVideos(manager.getDirChooser().showDialog(addFolder.getScene().getWindow()));
 		}
 	}
 
@@ -97,13 +97,13 @@ public class MainPanelController {
 		foldersList.getSelectionModel().select(0);
 		// load videos for that entry
 		manager.loadFolderVideos(foldersList.getSelectionModel().getSelectedItem());
-		manager.initVideosListCell();
-		manager.initSubtitlesListCell();
 		videoSelListener = new VideoSelectedListener(manager);
+		manager.initVideosListCell(videoSelListener);
+		manager.initSubtitlesListCell();
+		
 		subListener = new SubtitleSelectedListener(manager);
 		subtitlesList.selectedItemProperty().addListener(subListener);
 		videosList.selectedItemProperty().addListener(videoSelListener);
-
+		
 	}
-
 }

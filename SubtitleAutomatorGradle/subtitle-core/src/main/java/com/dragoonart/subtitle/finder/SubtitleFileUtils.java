@@ -19,11 +19,20 @@ public class SubtitleFileUtils {
 
 	public static Map<String, Path> unpackSubs(Path pathToZip, Path targetDir) {
 		Map<String, Path> result = new HashMap<String, Path>();
-		try {
-			extractZip(pathToZip, targetDir, result);
-		} catch (Exception e) {
-			extractRrar(pathToZip, targetDir, result, e);
-
+		if (pathToZip != null && Files.exists(pathToZip)) {
+			try {
+				extractZip(pathToZip, targetDir, result);
+			} catch (Exception e) {
+				if (!pathToZip.getFileName().toString().endsWith(".7z")) {
+					try {
+						extractRrar(pathToZip, targetDir, result, e);
+					} catch (Exception e2) {
+						System.out.println("Unable to extract: " + pathToZip);
+						e2.addSuppressed(e);
+						throw e2;
+					}
+				}
+			}
 		}
 		return result;
 	}
@@ -34,21 +43,24 @@ public class SubtitleFileUtils {
 			while ((fh = arch.nextFileHeader()) != null) {
 				String fileName = fh.getFileNameString();
 				Path newFilePath;
-				if(targetDir == null) {
-				newFilePath = pathToZip.getParent().resolve(fh.getFileNameString());
+				if (targetDir == null) {
+					newFilePath = pathToZip.getParent().resolve(fh.getFileNameString());
 				} else {
-				newFilePath = targetDir.resolve(fh.getFileNameString());
+					newFilePath = targetDir.resolve(fh.getFileNameString());
 				}
 				if (isSubtitleEntry(fileName, newFilePath)) {
-					Files.createDirectories(newFilePath.getParent());
-					Files.copy(arch.getInputStream(fh), newFilePath);
+					if (!Files.exists(newFilePath)) {
+						Files.createDirectories(newFilePath.getParent());
+						Files.copy(arch.getInputStream(fh), newFilePath);
+					}
+					try {
+						result.put(fileName, newFilePath);
+					} catch (Throwable ex) {
+						System.out.println("Bad fileName: " + fileName);
+						ex.printStackTrace();
+					}
 				}
-				try {
-					result.put(fileName, newFilePath);
-				} catch (Throwable ex) {
-					System.out.println("Bad fileName: " + fileName);
-					ex.printStackTrace();
-				}
+
 			}
 		} catch (RarException | IOException e1) {
 			e.printStackTrace();
@@ -57,6 +69,7 @@ public class SubtitleFileUtils {
 	}
 
 	private static void extractZip(Path pathToZip, Path targetDir, Map<String, Path> result) {
+
 		ZipUtil.iterate(pathToZip.toFile(), new ZipEntryCallback() {
 
 			@Override
@@ -69,7 +82,8 @@ public class SubtitleFileUtils {
 					newFilePath = targetDir.toAbsolutePath().resolve(fileName);
 				}
 				if (isSubtitleEntry(fileName, newFilePath)) {
-					Files.copy(in, newFilePath);
+					if (!Files.exists(newFilePath))
+						Files.copy(in, newFilePath);
 					result.put(fileName, newFilePath);
 				}
 			}
@@ -81,7 +95,7 @@ public class SubtitleFileUtils {
 	}
 
 	public static boolean isSubtitleEntry(String fileName, Path newFilePath) {
-		return !Files.exists(newFilePath) && (fileName.endsWith(".srt") || fileName.endsWith(".sub"));
+		return (fileName.endsWith(".srt") || fileName.endsWith(".sub"));
 	}
 
 }

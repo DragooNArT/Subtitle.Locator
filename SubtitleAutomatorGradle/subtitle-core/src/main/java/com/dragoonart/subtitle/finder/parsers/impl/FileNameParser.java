@@ -49,12 +49,16 @@ public class FileNameParser implements IFileNameParser {
 				result.put(SHOW_SEASON, entry.substring(1, 3));
 				result.put(SHOW_EPISODE, entry.substring(4, 6));
 				patternIndex = i;
-				break;
 			} else if (dotSepPattern.matcher(entry).matches()) {
 				result.put(SHOW_SEASON, entry.substring(0, entry.indexOf('.')));
 				result.put(SHOW_EPISODE, entry.substring(entry.indexOf('.') + 1, entry.length()));
 				patternIndex = i;
+			} else if (matchYear.matcher(entry).matches() && Integer.parseInt(entry) < 1970) {
+				result.put(SHOW_SEASON, entry.substring(0, 2));
+				result.put(SHOW_EPISODE, entry.substring(2,4));
+				patternIndex = i;
 			}
+			
 
 		}
 		return patternIndex;
@@ -104,7 +108,7 @@ public class FileNameParser implements IFileNameParser {
 	private void resolveYearForRemoval(List<String> split, List<String> forRemoval, Map<String, String> result) {
 		for (String entry : split) {
 			Matcher matcher = matchYear.matcher(entry);
-			if (matcher.matches()) {
+			if (matcher.matches() && Integer.parseInt(entry) > 1970) {
 				result.put(SHOW_YEAR, entry);
 				forRemoval.add(entry);
 				break;

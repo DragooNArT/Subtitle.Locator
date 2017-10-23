@@ -101,6 +101,8 @@ public abstract class AbstractSubtitleService {
 		ContentDisposition cdp = new ContentDisposition(scd);
 
 		InputStream subZip = res.getEntityInputStream();
+		//strip windows invalid chars
+		folderName = folderName.replaceAll("[\\\\/:*?\"<>|]", " ");
 		Path dir = Paths.get("./testFiles/" + folderName + "/archives");
 		Path file = dir.resolve(cdp.getFileName());
 		if (Files.exists(file)) {

@@ -42,9 +42,15 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		return subtitlessVideos;
 	}
 	
+	public Set<VideoEntry> getFolderSubtitledVideos() {
+		loadFolderVideos();
+		return subtitledVideos;
+	}
+	
 	public void setScanFolder(Path rootFolder) {
 		this.rootFolder = rootFolder;
 		subtitlessVideos.clear();
+		subtitledVideos.clear();
 		locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
 	}
 
@@ -140,7 +146,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		for (String ext : MOVIE_EXT) {
 			String fileName = file.getFileName().toString();
 			if (fileName.endsWith("." + ext)) {
-				if(hasSubs(file) || isSample(file)) {
+				if(isSample(file)) {
 					return false;
 				}
 				
@@ -191,7 +197,11 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 					locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
 				}
 			}
-			subtitlessVideos.add(vfb);
+			if(hasSubs(file)) {
+				subtitledVideos.add(vfb);
+			} else {
+				subtitlessVideos.add(vfb);
+			}
 		}
 		return super.visitFile(file, attrs);
 	}
