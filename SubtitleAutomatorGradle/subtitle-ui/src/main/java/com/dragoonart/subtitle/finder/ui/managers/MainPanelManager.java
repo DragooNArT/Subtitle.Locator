@@ -1,5 +1,6 @@
 package com.dragoonart.subtitle.finder.ui.managers;
 
+import java.awt.TrayIcon.MessageType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import com.dragoonart.subtitle.finder.SubtitleFileScanner;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
+import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
 import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
@@ -86,7 +88,7 @@ public class MainPanelManager extends BaseManager {
 	private Set<VideoEntry> veSet = new HashSet<VideoEntry>();
 
 	public void loadFolderVideos(Path toFolder) {
-		//reset videos
+		// reset videos
 		veSet.clear();
 		setRootFolder(toFolder);
 		stpex.scheduleAtFixedRate(() -> {
@@ -98,7 +100,7 @@ public class MainPanelManager extends BaseManager {
 					temp.remove(ve);
 				}
 			}
-			
+
 			ObservableList<VideoEntry> list = FXCollections.observableArrayList();
 			list.addAll(veSet);
 			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
@@ -106,6 +108,7 @@ public class MainPanelManager extends BaseManager {
 				new Thread(() -> {
 					subFinder.lookupEverywhere(entry);
 					subFscanner.autoApplySubtitles(entry);
+					addNotificationForVideo(entry);
 					Platform.runLater(() -> {
 						list.add(entry);
 						list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
@@ -118,13 +121,21 @@ public class MainPanelManager extends BaseManager {
 
 	}
 
+	private void addNotificationForVideo(VideoEntry entry) {
+		if (!StartUI.isUiVisible() && entry.hasSubtitles()) {
+			Platform.runLater(() -> StartUI.trayIcon.displayMessage(entry.getFileName(),
+					"Found " + entry.getSubtitles().size() + " subtitles", MessageType.INFO));
+		}
+
+	}
+
 	public void observeFolderVideos(File folder) {
 		if (folder == null) {
 			return;
 		}
 		Path toFolder = Paths.get(folder.toURI());
 		if (Files.exists(toFolder)) {
-			
+
 			PreferencesManager.INSTANCE.addLocationPath(toFolder);
 			panelCtrl.getFoldersList().getItems().add(0, toFolder);
 			// select first entry
