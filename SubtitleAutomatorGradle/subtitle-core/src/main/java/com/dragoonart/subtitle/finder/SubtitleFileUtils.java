@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 
+import org.apache.commons.lang.StringUtils;
 import org.zeroturnaround.zip.ZipEntryCallback;
 import org.zeroturnaround.zip.ZipUtil;
 
@@ -99,7 +100,7 @@ public class SubtitleFileUtils {
 	}
 
 	public static boolean isSubtitleEntry(String fileName) {
-		return (fileName.matches(".+\\.(str|sub)$"));
+		return StringUtils.endsWithIgnoreCase(fileName, ".srt") || StringUtils.endsWithIgnoreCase(fileName, ".sub");
 	}
 
 }
