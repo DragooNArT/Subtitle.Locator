@@ -16,7 +16,7 @@ public class VideoEntry {
 
 	private String acceptableFileName = null;
 
-	private boolean subtitlesFound = false;
+	private boolean subtitlesProcessed = false;
 
 	private ParsedFileName pfn;
 
@@ -26,12 +26,12 @@ public class VideoEntry {
 		pfn = new ParsedFileName(getAcceptableFileName());
 	}
 
-	public boolean isSubtitlesFound() {
-		return subtitlesFound;
+	public boolean isSubtitlesProcessed() {
+		return subtitlesProcessed;
 	}
 
-	public void setSubtitlesFound(boolean subtitlesFound) {
-		this.subtitlesFound = subtitlesFound;
+	public void setSubtitlesProcessed(boolean subtitlesFound) {
+		this.subtitlesProcessed = subtitlesFound;
 	}
 
 	public String getAcceptableFileName() {
@@ -103,12 +103,9 @@ public class VideoEntry {
 	}
 
 	public boolean hasSubtitles() {
-		return !subtitles.isEmpty();
+		return subtitles != null && !subtitles.isEmpty();
 	}
 
-	public boolean isProccessedForSubtitles() {
-		return subtitles != null;
-	}
 
 	public String getFileName() {
 		return pathToFile.getFileName().toString().substring(0, pathToFile.getFileName().toString().lastIndexOf("."));

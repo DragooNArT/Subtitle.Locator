@@ -10,23 +10,23 @@
 <?import javafx.scene.layout.TilePane?>
 <?import javafx.scene.text.Text?>
 
-<TilePane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dragoonart.subtitle.finder.ui.controllers.MainPanelController">
+<TilePane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="551.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dragoonart.subtitle.finder.ui.controllers.MainPanelController">
    <children>
-      <SplitPane dividerPositions="0.09398496240601503" focusTraversable="false" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0">
+      <SplitPane dividerPositions="0.13114754098360656" focusTraversable="false" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0">
         <items>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                <children>
                   <Pane prefHeight="81.0" prefWidth="640.0">
                      <children>
-                        <ChoiceBox fx:id="foldersList" layoutX="25.0" layoutY="25.0" prefHeight="28.0" prefWidth="315.0" />
-                        <Button fx:id="addFolder" layoutX="363.0" layoutY="25.0" mnemonicParsing="false" onAction="#addFolderLocation" text="Add Folder" />
+                        <ChoiceBox fx:id="foldersList" layoutX="79.0" layoutY="25.0" prefHeight="28.0" prefWidth="315.0" />
+                        <Button fx:id="addFolder" layoutX="417.0" layoutY="23.0" mnemonicParsing="false" onAction="#addFolderLocation" text="Add Folder" />
                      </children>
                   </Pane>
                </children>
             </AnchorPane>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="462.0" prefWidth="638.0">
                <children>
-                  <CharmListView fx:id="videosList" prefHeight="723.0" prefWidth="640.0" />
+                  <CharmListView fx:id="videosList" layoutX="-1.0" prefHeight="686.0" prefWidth="640.0" />
                </children>
             </AnchorPane>
         </items>

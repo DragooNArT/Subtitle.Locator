@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.dragoonart.subtitle.finder.SubtitleFileScanner;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
@@ -20,7 +21,6 @@ import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
-import com.dragoonart.subtitle.finder.ui.listeners.VideoSelectedListener;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
 import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.gluonhq.charm.glisten.control.CharmListCell;
@@ -35,11 +35,11 @@ public class MainPanelManager extends BaseManager {
 
 	private SubtitleFinder subFinder = new SubtitleFinder();
 
+	private SubtitleFileScanner subFscanner;
+
 	public MainPanelManager(MainPanelController mainPanelController) {
 		this.panelCtrl = mainPanelController;
 	}
-
-	private SubtitleFileScanner subFscanner;
 
 	public MainPanelController getController() {
 		return panelCtrl;
@@ -55,11 +55,6 @@ public class MainPanelManager extends BaseManager {
 
 	public Path getSelectedVideo() {
 		return panelCtrl.getVideosList().getSelectedItem().getPathToFile();
-	}
-
-	public void setNoSubtitles(VideoEntry value) {
-		// TODO Auto-generated method stub
-
 	}
 
 	private void setRootFolder(Path toFolder) {
@@ -92,33 +87,51 @@ public class MainPanelManager extends BaseManager {
 		veSet.clear();
 		setRootFolder(toFolder);
 		stpex.scheduleAtFixedRate(() -> {
-
-			Set<VideoEntry> temp = subFscanner.getFolderVideos();
-			temp.addAll(subFscanner.getFolderSubtitledVideos());
-			for (VideoEntry ve : veSet) {
-				if (temp.contains(ve)) {
-					temp.remove(ve);
-				}
+			try {
+				scanFolderForVideos();
+			} catch (Exception e) {
+				System.out.println("Main scanning exec failed!!!: ");
+				e.printStackTrace();
 			}
+		}, 0, 60, TimeUnit.SECONDS);
+	}
 
+	private void scanFolderForVideos() {
+		synchronized (veSet) {
+			Set<VideoEntry> subtitlessVideos = subFscanner.getFolderVideos();
+			Set<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
+			//add only the new entries
+			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toList()));
+			veSet.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toList()));
+			//leave only the entries which really have existing videos
+			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toSet());
 			ObservableList<VideoEntry> list = FXCollections.observableArrayList();
-			list.addAll(veSet);
-			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
-			for (VideoEntry entry : temp) {
+
+			for (VideoEntry entry : veSet) {
 				new Thread(() -> {
-					subFinder.lookupEverywhere(entry);
-					subFscanner.autoApplySubtitles(entry);
-					addNotificationForVideo(entry);
-					Platform.runLater(() -> {
-						list.add(entry);
-						list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
-					});
-					Platform.runLater(() -> panelCtrl.getVideosList().setItems(list));
+					//look for subs if neccessary
+					if (!entry.hasSubtitles() && !entry.isSubtitlesProcessed()) {
+						subFinder.lookupEverywhere(entry);
+					}
+					//apply subs if neccessary
+					if (entry.hasSubtitles() && !SubtitleFileScanner.hasSubs(entry.getPathToFile())) {
+						subFscanner.autoApplySubtitles(entry);
+						addNotificationForVideo(entry);
+
+					}
+					//add entry to list if new
+					if (!list.contains(entry)) {
+						Platform.runLater(() -> {
+							list.add(entry);
+							
+							list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+							panelCtrl.getVideosList().setItems(list);
+ 						});
+					}
+
 				}).start();
 			}
-			veSet.addAll(temp);
-		}, 0, 5, TimeUnit.SECONDS);
-
+		}
 	}
 
 	private void addNotificationForVideo(VideoEntry entry) {
@@ -145,19 +158,19 @@ public class MainPanelManager extends BaseManager {
 		}
 	}
 
-	public void initVideosListCell(VideoSelectedListener videoSelListener) {
+	public void initVideosListCell() {
 		panelCtrl.getVideosList().setCellFactory(p -> new CharmListCell<VideoEntry>() {
 
 			@Override
 			public void updateItem(VideoEntry ve, boolean empty) {
 				super.updateItem(ve, empty);
 				loadVideoTIle(ve);
-				this.setOnMouseClicked(videoSelListener);
+				this.setOnMouseClicked(panelCtrl.getVideoSelListener());
 			}
 
 			private void loadVideoTIle(VideoEntry ve) {
 				ListTile tile = new ListTile();
-				if (ve.getSubtitles().isEmpty()) {
+				if (ve.hasSubtitles()) {
 					tile.setStyle("-fx-background-color: #f9f7f7;");
 				} else {
 					tile.setStyle("-fx-background-color: #eff9ef;");

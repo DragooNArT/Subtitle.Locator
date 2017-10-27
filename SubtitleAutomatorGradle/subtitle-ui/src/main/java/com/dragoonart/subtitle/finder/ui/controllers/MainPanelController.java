@@ -22,9 +22,10 @@ import javafx.scene.text.Text;
 public class MainPanelController {
 
 	private VideoSelectedListener videoSelListener;
+
 	private SubtitleSelectedListener subListener;
 	private MainPanelManager manager;
-
+	
 	@FXML
 	private ResourceBundle resources;
 
@@ -54,7 +55,13 @@ public class MainPanelController {
 
 	@FXML
 	private CharmListView<Path, ?> subtitlesList;
-
+	
+	public VideoSelectedListener getVideoSelListener() {
+		return videoSelListener;
+	}
+	public MainPanelManager getManager() {
+		return manager;
+	}
 	public CharmListView<VideoEntry, ?> getVideosList() {
 		return videosList;
 	}
@@ -100,16 +107,17 @@ public class MainPanelController {
 	}
 	@FXML
 	void initialize() {
+		
 		assert foldersList != null : "fx:id=\"foldersList\" was not injected: check your FXML file 'MainPanel.fxml'.";
 		manager = new MainPanelManager(this);
 		manager.loadLocations();
-
+		videoSelListener = new VideoSelectedListener(manager);
 		// select first entry
 		foldersList.getSelectionModel().select(0);
 		// load videos for that entry
 		manager.loadFolderVideos(foldersList.getSelectionModel().getSelectedItem());
-		videoSelListener = new VideoSelectedListener(manager);
-		manager.initVideosListCell(videoSelListener);
+		
+		manager.initVideosListCell();
 		manager.initSubtitlesListCell();
 		
 		subListener = new SubtitleSelectedListener(manager);

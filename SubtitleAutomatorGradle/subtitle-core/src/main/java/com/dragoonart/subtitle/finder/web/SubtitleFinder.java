@@ -31,7 +31,7 @@ public class SubtitleFinder {
 			try {
 			result.addAll(ss.getSubtitles(ve.getParsedFilename()));
 			ve.setSubtitles(result);
-			ve.setSubtitlesFound(true);
+			ve.setSubtitlesProcessed(true);
 			} catch(Exception e) {
 				System.out.println("Failed too lookup subs in: "+ss.getServiceProvider().getBaseUrl());
 				e.printStackTrace();

@@ -9,6 +9,7 @@ import com.dragoonart.subtitle.finder.ui.managers.MainPanelManager;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.scene.input.MouseEvent;
 
@@ -25,7 +26,7 @@ public class VideoSelectedListener implements ChangeListener<VideoEntry>, EventH
 		if (observable.getValue().hasSubtitles()) {
 			panelManager.loadSubtitles(observable.getValue().getSubtitles());
 		} else {
-			panelManager.setNoSubtitles(observable.getValue());
+			panelManager.getController().getSubtitlesList().setItems(FXCollections.emptyObservableList());
 		}
 
 	}
