@@ -1,15 +1,54 @@
 package com.dragoonart.subtitle.finder.cache;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 
 public class CacheManager {
 
-	private List<LocationCache> locCache = new ArrayList<LocationCache>();
+	private class LocationCache {
+
+		private String location;
+		private Set<VideoEntry> videoEntries;
+
+		public LocationCache(String location) {
+			this.location = location;
+			videoEntries = new HashSet<VideoEntry>();
+		}
+
+		public String getLocation() {
+			return location;
+		}
+
+		protected void addCacheEntry(VideoEntry entry) {
+			videoEntries.add(entry);
+		}
+
+		public VideoEntry getCacheEntry(Path videoLoc) {
+			return videoEntries.stream().filter(e -> e.getPathToFile().equals(videoLoc)).findFirst().orElse(null);
+		}
+
+		protected void removeCacheEntry() {
+			// TODO
+		}
+
+		@Override
+		public int hashCode() {
+			return location.hashCode();
+		}
+	}
+
+	public static final String GLOBAL_CACHE_DIR = "";
+
+	private Set<LocationCache> locCache = new HashSet<LocationCache>();
 	private static CacheManager instance;
+
+	static {
+		// Initialise
+		instance.getInsance();
+	}
 
 	public CacheManager() {
 		loadCache();
@@ -23,19 +62,28 @@ public class CacheManager {
 	}
 
 	private void loadCache() {
-
+		// TODO
 	}
 
-	protected boolean hasCacheEntry(Path location) {
+	public boolean hasCacheEntry(Path location) {
 		return locCache.stream().filter(e -> e.getLocation().equals(location.toAbsolutePath().toString())).findFirst()
 				.isPresent();
 	}
 
-	protected LocationCache getCacheEntry(String location) {
+	public VideoEntry getCachedEntry(Path location) {
+		for (LocationCache lc : locCache) {
+			VideoEntry ve = lc.getCacheEntry(location);
+			if (ve != null)
+				return ve;
+		}
+		return null;
+	}
+
+	private LocationCache getCacheEntry(String location) {
 		return locCache.stream().filter(e -> e.getLocation().equals(location)).findFirst().orElse(null);
 	}
 
-	public LocationCache getCacheEntry(Path location) {
+	private LocationCache getCacheEntry(Path location) {
 		return getCacheEntry(location.toAbsolutePath().toString());
 	}
 
@@ -49,17 +97,14 @@ public class CacheManager {
 		if (entry != null && entry.getRootDir() != null) {
 			if (hasCacheEntry(entry.getRootDir())) {
 				getCacheEntry(entry.getRootDir()).addCacheEntry(entry);
-				return true;
 			} else {
 				createAndStoreNewEntry(entry);
-				return true;
 			}
+
+			// TODO Maybe tell the Location to store now. This can be a trigger for
+			// re-assigning
+			return true;
 		}
 		return false;
 	}
-
-	private void writeToStorage() {
-
-	}
-
 }

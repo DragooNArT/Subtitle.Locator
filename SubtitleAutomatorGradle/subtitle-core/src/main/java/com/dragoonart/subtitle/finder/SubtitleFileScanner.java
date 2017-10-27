@@ -17,42 +17,39 @@ import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.cache.CacheManager;
-import com.dragoonart.subtitle.finder.cache.LocationCache;
 
-public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
+public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 
 	private Path rootFolder;
 
 	private static final String[] MOVIE_EXT = new String[] { "avi", "mpeg", "mkv", "mp4", "mpg", ".ts" };
 	private Set<VideoEntry> subtitlessVideos = new HashSet<>();
 	private Set<VideoEntry> subtitledVideos = new HashSet<>();
-	private LocationCache locCache;
 
 	public SubtitleFileScanner(String path) {
 		rootFolder = Paths.get(path);
-		locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
+		CacheManager.getInsance();
 	}
 
 	public SubtitleFileScanner(Path path) {
 		rootFolder = path;
-		locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
+		CacheManager.getInsance();
 	}
 
 	public Set<VideoEntry> getFolderVideos() {
 		loadFolderVideos();
 		return subtitlessVideos;
 	}
-	
+
 	public Set<VideoEntry> getFolderSubtitledVideos() {
 		loadFolderVideos();
 		return subtitledVideos;
 	}
-	
+
 	public void setScanFolder(Path rootFolder) {
 		this.rootFolder = rootFolder;
 		subtitlessVideos.clear();
 		subtitledVideos.clear();
-		locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
 	}
 
 	private void loadFolderVideos() {
@@ -63,7 +60,6 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 			e.printStackTrace();
 		}
 	}
-
 
 	private void logResults() {
 		int success = 0;
@@ -78,9 +74,10 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 
 			}
 		}
-		System.out.println("Total  : " + subtitlessVideos.size());
-		System.out.println("Success: " + success);
-		System.out.println("Fail: " + fail);
+		System.out.println("--- Parsing LOG ---");
+		System.out.println("Total Videos Found : " + subtitlessVideos.size());
+		System.out.println("Successfully Parssed : " + success);
+		System.out.println("Fail Parssing : " + fail);
 	}
 
 	private boolean areSuitableSubtitles(VideoEntry ve, Entry<String, Path> entry) {
@@ -122,26 +119,26 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		}
 		return false;
 	}
-	
+
 	public void autoApplySubtitles(VideoEntry ve) {
-		//TODO implement auto application in any case there's valid subs
-//		boolean foundSuitable = false;
+		// TODO implement auto application in any case there's valid subs
+		// boolean foundSuitable = false;
 		ve.getSubtitles().stream().forEach(e -> {
-			
+
 			for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
 				System.out.println(
 						"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
 				if (areSuitableSubtitles(ve, entry)) {
-//					foundSuitable = true;
+					// foundSuitable = true;
 					break;
 				}
 			}
-			
+
 		});
-//		//if can't approximate subtitles, apply the first entry
-//		if(!foundSuitable && !ve.getSubtitles().isEmpty()) {
-//			applyFirstFound(ve, ve.getSubtitles().iterator().next());
-//		}
+		// //if can't approximate subtitles, apply the first entry
+		// if(!foundSuitable && !ve.getSubtitles().isEmpty()) {
+		// applyFirstFound(ve, ve.getSubtitles().iterator().next());
+		// }
 	}
 
 	private void applyFirstFound(VideoEntry ve, SubtitleArchiveEntry e) {
@@ -154,6 +151,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 			e1.printStackTrace();
 		}
 	}
+
 	private void copySubtitleToMovie(Path newFilePath, Path entry) throws IOException {
 		// remove the old subtitle file
 		if (Files.exists(newFilePath)) {
@@ -167,10 +165,10 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 		for (String ext : MOVIE_EXT) {
 			String fileName = file.getFileName().toString();
 			if (fileName.endsWith("." + ext)) {
-				if(isSample(file)) {
+				if (isSample(file)) {
 					return false;
 				}
-				
+
 				// finally add it
 				return true;
 			}
@@ -211,14 +209,13 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 
 		if (acceptFile(file)) {
-			VideoEntry vfb;
-			if (locCache == null || (vfb = locCache.getCacheEntry(file)) == null) {
+			VideoEntry vfb = CacheManager.getInsance().getCachedEntry(file);
+
+			if (vfb == null) {
 				vfb = new VideoEntry(file, rootFolder);
-				if (CacheManager.getInsance().addCacheEntry(vfb) && locCache == null) {
-					locCache = CacheManager.getInsance().getCacheEntry(rootFolder);
-				}
+				CacheManager.getInsance().addCacheEntry(vfb);
 			}
-			if(hasSubs(file)) {
+			if (hasSubs(file)) {
 				subtitledVideos.add(vfb);
 			} else {
 				subtitlessVideos.add(vfb);
@@ -228,7 +225,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path>{
 	}
 
 	private boolean acceptSubtitle(String file) {
-		return file.endsWith(".srt") || file.endsWith(".sub");
+		return SubtitleFileUtils.isSubtitleEntry(file);
 	}
 
 }

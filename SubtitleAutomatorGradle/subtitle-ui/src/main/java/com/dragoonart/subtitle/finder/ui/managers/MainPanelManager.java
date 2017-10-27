@@ -35,11 +35,11 @@ public class MainPanelManager extends BaseManager {
 
 	private SubtitleFinder subFinder = new SubtitleFinder();
 
+	private SubtitleFileScanner subFscanner;
+
 	public MainPanelManager(MainPanelController mainPanelController) {
 		this.panelCtrl = mainPanelController;
 	}
-
-	private SubtitleFileScanner subFscanner;
 
 	public MainPanelController getController() {
 		return panelCtrl;
