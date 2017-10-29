@@ -28,6 +28,7 @@ public class SubtitleSelectedListener implements ChangeListener<Path> {
 			if (result.get() == ButtonType.OK) {
 				try {
 					copySubtitleToMovie(panelManager.getSelectedVideo(), observable.getValue());
+					panelManager.getController().getVideosList().refresh();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

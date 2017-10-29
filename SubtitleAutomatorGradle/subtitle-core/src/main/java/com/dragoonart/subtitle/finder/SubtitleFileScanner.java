@@ -120,21 +120,23 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 		return false;
 	}
 
-	public void autoApplySubtitles(VideoEntry ve) {
+	public boolean autoApplySubtitles(VideoEntry ve) {
+		
 		// TODO implement auto application in any case there's valid subs
 		// boolean foundSuitable = false;
-		ve.getSubtitles().stream().forEach(e -> {
+		for(SubtitleArchiveEntry e : ve.getSubtitles()) {
 
 			for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
-				System.out.println(
-						"Name: " + entry.getKey() + "\nLocation: " + entry.getValue().toAbsolutePath().toString());
+				
 				if (areSuitableSubtitles(ve, entry)) {
 					// foundSuitable = true;
-					break;
+					System.out.println("Found subs for: "+ ve.getAcceptableFileName());
+					return true;
 				}
 			}
 
-		});
+		};
+		return false;
 		// //if can't approximate subtitles, apply the first entry
 		// if(!foundSuitable && !ve.getSubtitles().isEmpty()) {
 		// applyFirstFound(ve, ve.getSubtitles().iterator().next());
@@ -177,16 +179,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 		return false;
 	}
 
-	public static boolean hasSubs(Path file) {
-		// calculate if it already has subtitles
-		String fileName = file.getFileName().toString();
-		String srt = fileName.substring(0, fileName.lastIndexOf(".")) + ".srt";
-		String sub = fileName.substring(0, fileName.lastIndexOf(".")) + ".sub";
-		if (Files.exists(file.getParent().resolve(srt)) || Files.exists(file.getParent().resolve(sub))) {
-			return true;
-		}
-		return false;
-	}
+	
 
 	private boolean isSample(Path file) {
 		// assert it's not a sample file
@@ -215,7 +208,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 				vfb = new VideoEntry(file, rootFolder);
 				CacheManager.getInsance().addCacheEntry(vfb);
 			}
-			if (hasSubs(file)) {
+			if (SubtitleFileUtils.hasSubs(file)) {
 				subtitledVideos.add(vfb);
 			} else {
 				subtitlessVideos.add(vfb);

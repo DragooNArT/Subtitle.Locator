@@ -13,6 +13,7 @@ public class SubtitleArchiveEntry {
 	private Path pathToSubtitle;
 
 	private String link;
+
 	private SubtitleProvider source;
 	private Map<String, Path> subtitleEntries = new HashMap<String, Path>();
 
@@ -22,12 +23,24 @@ public class SubtitleArchiveEntry {
 		this.source = source;
 	}
 
+	public SubtitleArchiveEntry(Path pathToArchive) {
+		this.pathToSubtitle = pathToArchive;
+	}
+
 	public String getLink() {
 		return link;
 	}
 
 	public SubtitleProvider getProvider() {
 		return source;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	public void setSource(SubtitleProvider source) {
+		this.source = source;
 	}
 
 	public Map<String, Path> getSubtitleEntries() {

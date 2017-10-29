@@ -6,8 +6,6 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.web.AbstractSubtitleService;
@@ -47,8 +45,8 @@ public class SubunacsService extends AbstractSubtitleService {
 	}
 
 	@Override
-	protected List<Element> getFilteredLinks(Document siteResults) {
+	protected List<String> getSubArchiveLinks(Document siteResults) {
 		return siteResults.getElementsByClass("tooltip").stream().filter(e -> acceptLink(e.attr("href")))
-				.collect(Collectors.toList());
+				.map(e -> e.attr("href")).collect(Collectors.toList());
 	}
 }

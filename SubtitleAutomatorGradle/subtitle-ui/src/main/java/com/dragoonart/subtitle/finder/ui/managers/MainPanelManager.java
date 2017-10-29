@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.dragoonart.subtitle.finder.SubtitleFileScanner;
+import com.dragoonart.subtitle.finder.SubtitleFileUtils;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
@@ -23,19 +25,28 @@ import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
 import com.dragoonart.subtitle.finder.web.SubtitleFinder;
+import com.dragoonart.subtitle.finder.web.SubtitleFinderAllocator;
 import com.gluonhq.charm.glisten.control.CharmListCell;
 import com.gluonhq.charm.glisten.control.ListTile;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import stormpot.BlazePool;
+import stormpot.Config;
+import stormpot.Pool;
+import stormpot.PoolException;
+import stormpot.Timeout;
 
 public class MainPanelManager extends BaseManager {
 	private MainPanelController panelCtrl;
 
-	private SubtitleFinder subFinder = new SubtitleFinder();
+	SubtitleFinderAllocator allocator = new SubtitleFinderAllocator();
+	Config<SubtitleFinder> config = new Config<SubtitleFinder>().setAllocator(allocator).setSize(10);
+	Pool<SubtitleFinder> pool = new BlazePool<SubtitleFinder>(config);
+	Timeout timeout = new Timeout(60, TimeUnit.SECONDS);
 
-	private SubtitleFileScanner subFscanner;
+	SubtitleFileScanner subFscanner;
 
 	public MainPanelManager(MainPanelController mainPanelController) {
 		this.panelCtrl = mainPanelController;
@@ -100,38 +111,98 @@ public class MainPanelManager extends BaseManager {
 		synchronized (veSet) {
 			Set<VideoEntry> subtitlessVideos = subFscanner.getFolderVideos();
 			Set<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
-			//add only the new entries
-			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toList()));
-			veSet.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toList()));
-			//leave only the entries which really have existing videos
-			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toSet());
-			ObservableList<VideoEntry> list = FXCollections.observableArrayList();
+			// add only the new entries
+			Set<VideoEntry> tempAll = new HashSet<>();
 
+			tempAll.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toSet()));
+			tempAll.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toSet()));
+			veSet.addAll(tempAll);
+			// leave only the entries which really have existing videos
+			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toSet());
+			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
+			
+//			list.addAll(tempAll);
+			updateVideosList(tempAll, list);
 			for (VideoEntry entry : veSet) {
 				new Thread(() -> {
-					//look for subs if neccessary
+					// look for subs if neccessary
 					if (!entry.hasSubtitles() && !entry.isSubtitlesProcessed()) {
-						subFinder.lookupEverywhere(entry);
+						SubtitleFinder object = null;
+						try {
+							object = pool.claim(timeout);
+							if (object != null) {
+								Set<SubtitleArchiveEntry> saE = object.lookupEverywhere(entry);
+								if(!saE.isEmpty()) {
+									Platform.runLater(() -> getController().getVideosList().refresh());
+								}
+							} else {
+								System.out.println("Unable to look for: " + entry.toString());
+							}
+							// Do stuff with 'object'.
+							// Note: 'claim' returns 'null' if it times out.
+						} catch (PoolException | InterruptedException e1) {
+							e1.printStackTrace();
+						} finally {
+							if (object != null) {
+								object.release();
+							}
+						}
 					}
-					//apply subs if neccessary
-					if (entry.hasSubtitles() && !SubtitleFileScanner.hasSubs(entry.getPathToFile())) {
-						subFscanner.autoApplySubtitles(entry);
-						addNotificationForVideo(entry);
+					// apply subs if neccessary
+					if (entry.hasSubtitles() && !SubtitleFileUtils.hasSubs(entry.getPathToFile())) {
+						if(subFscanner.autoApplySubtitles(entry)) {
+							Platform.runLater(() -> getController().getVideosList().refresh());
+							addNotificationForVideo(entry);
+						}
 
 					}
-					//add entry to list if new
+					// add entry to list if new
 					if (!list.contains(entry)) {
-						Platform.runLater(() -> {
-							list.add(entry);
-							
-							list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
-							panelCtrl.getVideosList().setItems(list);
- 						});
+						updateVideosList(entry, list);
 					}
 
 				}).start();
 			}
 		}
+	}
+
+	private void loadZipArchives(Set<VideoEntry> tempAll) {
+		for (VideoEntry entry : tempAll) {
+			Set<SubtitleArchiveEntry> result = new HashSet<>();
+
+			try {
+				Files.list(SubtitleFileUtils.getArchivesDir(entry.getParsedFilename())).forEach(e -> {
+					if (isArchive(e)) {
+						SubtitleArchiveEntry archEntry = new SubtitleArchiveEntry(e);
+						result.add(archEntry);
+					}
+
+				});
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	private boolean isArchive(Path e) {
+		return e.toString().endsWith(".7z") || e.toString().endsWith(".rar") || e.toString().endsWith(".zip");
+	}
+
+	private void updateVideosList(VideoEntry entry, ObservableList<VideoEntry> list) {
+		Platform.runLater(() -> {
+			list.add(entry);
+			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+			panelCtrl.getVideosList().setItems(list);
+		});
+	}
+
+	private void updateVideosList(Set<VideoEntry> entries, ObservableList<VideoEntry> list) {
+		Platform.runLater(() -> {
+			list.addAll(entries);
+			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+			panelCtrl.getVideosList().setItems(list);
+		});
 	}
 
 	private void addNotificationForVideo(VideoEntry entry) {
@@ -170,10 +241,11 @@ public class MainPanelManager extends BaseManager {
 
 			private void loadVideoTIle(VideoEntry ve) {
 				ListTile tile = new ListTile();
-				if (ve.hasSubtitles()) {
+				if (!ve.hasSubtitles()) {
 					tile.setStyle("-fx-background-color: #f9f7f7;");
-				} else {
-					tile.setStyle("-fx-background-color: #eff9ef;");
+				} else if (ve.hasSubtitles()) {
+					tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
+							: "-fx-background-color: #ffff00;");
 				}
 				SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 

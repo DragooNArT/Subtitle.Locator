@@ -100,6 +100,13 @@ public class VideoEntry {
 		if (this.subtitles == null) {
 			this.subtitles = new HashSet<SubtitleArchiveEntry>();
 		}
+		for(SubtitleArchiveEntry sE : subtitles) {
+			if(this.subtitles.contains(sE)) {
+				this.subtitles.remove(sE);
+				
+			} 
+			this.subtitles.add(sE);
+		}
 	}
 
 	public boolean hasSubtitles() {

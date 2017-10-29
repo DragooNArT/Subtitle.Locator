@@ -53,8 +53,8 @@ public class SubsabService extends AbstractSubtitleService {
 	}
 
 	@Override
-	protected List<Element> getFilteredLinks(Document siteResults) {
+	protected List<String> getSubArchiveLinks(Document siteResults) {
 		return siteResults.getElementsByAttribute("onmouseover").stream()
-				.filter(e -> pattern_subLinks.matcher(e.attr("href")).matches()).collect(Collectors.toList());
+				.filter(e -> pattern_subLinks.matcher(e.attr("href")).matches()).map(e -> e.attr("href")).collect(Collectors.toList());
 	}
 }

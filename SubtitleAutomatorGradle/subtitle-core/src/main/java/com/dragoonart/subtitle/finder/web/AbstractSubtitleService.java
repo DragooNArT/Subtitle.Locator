@@ -6,18 +6,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
+import com.dragoonart.subtitle.finder.SubtitleFileUtils;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
+import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -34,26 +36,26 @@ public abstract class AbstractSubtitleService {
 	/**
 	 * Get subtitle archives for the specified parsed file name(video name)
 	 * 
-	 * @param pfn
+	 * @param ve
 	 *            - parsed file name(video name)
 	 * @return - list of subtitle archive objects
 	 */
-	public List<SubtitleArchiveEntry> getSubtitles(ParsedFileName pfn) {
-		String searchWord = getSearchKeyword(pfn);
+	public Set<SubtitleArchiveEntry> getSubtitles(VideoEntry ve) {
+		String searchWord = getSearchKeyword(ve.getParsedFilename());
 		System.out.println("Looking for \"" + searchWord + "\" in site: " + getServiceProvider().getBaseUrl());
 		WebResource.Builder builder = client.resource(getServiceProvider().getSearchUrl()).getRequestBuilder();
 
-		ClientResponse resp = builder.entity(getFormData(pfn, builder), MediaType.APPLICATION_FORM_URLENCODED)
+		ClientResponse resp = builder
+				.entity(getFormData(ve.getParsedFilename(), builder), MediaType.APPLICATION_FORM_URLENCODED)
 				.post(ClientResponse.class);
-
+		// TODO don't log already downloaded subs
 		// do the work
-		List<SubtitleArchiveEntry> subZips = getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)));
+		Set<SubtitleArchiveEntry> subZips = getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)),
+				ve.getParsedFilename());
 
-		System.out.println("Found " + subZips.size() + " for search: \"" + searchWord + "\" in site: "
-				+ getServiceProvider().getBaseUrl());
-		for (SubtitleArchiveEntry zip : subZips) {
-			System.out.println(zip.getSubtitleName());
-		}
+		// for (SubtitleArchiveEntry zip : subZips) {
+		// System.out.println(zip.getSubtitleName());
+		// }
 
 		return subZips;
 	}
@@ -86,7 +88,7 @@ public abstract class AbstractSubtitleService {
 		client = Client.create();
 	}
 
-	protected Path downloadSubtitleArchive(String folderName, String href) throws ParseException, IOException {
+	protected Path downloadSubtitleArchive(ParsedFileName pfn, String href) throws ParseException, IOException {
 
 		WebResource.Builder builder = client.resource(href).getRequestBuilder();
 		setProivderHeaders(builder);
@@ -99,50 +101,60 @@ public abstract class AbstractSubtitleService {
 		}
 		String scd = res.getHeaders().getFirst("Content-Disposition");
 		ContentDisposition cdp = new ContentDisposition(scd);
-
-		InputStream subZip = res.getEntityInputStream();
-		//strip windows invalid chars
-		folderName = folderName.replaceAll("[\\\\/:*?\"<>|]", " ");
-		Path dir = Paths.get("./testFiles/" + folderName + "/archives");
-		Path file = dir.resolve(cdp.getFileName());
-		if (Files.exists(file)) {
-			return file.toAbsolutePath();
+		Path dir = SubtitleFileUtils.getArchivesDir(pfn);
+		Path file = dir.resolve(SubtitleFileUtils.toFileSystemSafeName(href)
+				+ cdp.getFileName().substring(cdp.getFileName().lastIndexOf(".")));
+		if (!Files.exists(file.toAbsolutePath())) {
+			try (InputStream subZip = res.getEntityInputStream()) {
+				System.out.println("Writing archive with path: " + file.toString());
+				Files.createDirectories(dir);
+				Files.copy(subZip, file.toAbsolutePath());
+				subZip.close();
+			}
 		}
-		Files.createDirectories(dir);
-		Files.copy(subZip, file);
-
-		System.out.println("Wrote to: " + file.toAbsolutePath());
+		res.close();
 		return file.toAbsolutePath();
 	}
 
-	protected List<SubtitleArchiveEntry> getSubtitleArchives(Document siteResults) {
-		List<SubtitleArchiveEntry> results = new ArrayList<SubtitleArchiveEntry>();
-		for (Element link : getFilteredLinks(siteResults)) {
-			String href = link.attr("href");
+	private boolean isLinkAlreadyDownloaded(ParsedFileName pfn, String href) {
+		return Files.exists(getArchiveForLink(pfn, href));
+	}
+
+	private Path getArchiveForLink(ParsedFileName pfn, String href) {
+		return SubtitleFileUtils.getArchivesDir(pfn).resolve(SubtitleFileUtils.toFileSystemSafeName(href));
+	}
+
+	protected Set<SubtitleArchiveEntry> getSubtitleArchives(Document siteResults, ParsedFileName pfn) {
+		Set<SubtitleArchiveEntry> results = new HashSet<SubtitleArchiveEntry>();
+		for (String href : getSubArchiveLinks(siteResults)) {
 			// append baseUrl if it's missing
 			if (!href.startsWith(getServiceProvider().getBaseUrl())) {
 				href = getServiceProvider().getBaseUrl() + href;
 			}
-
-			// this is how to get the zip name
-			String subZipName = link.textNodes().get(0).toString();
-			// download and add to results
-			try {
-				Path subtitleZip = downloadSubtitleArchive(subZipName, href);
-				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href, subtitleZip);
+			if (!isLinkAlreadyDownloaded(pfn, href)) {
+				// download and add to results
+				Path subtitleZip = null;
+				try {
+					subtitleZip = downloadSubtitleArchive(pfn, href);
+					SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href, subtitleZip);
+					results.add(entry);
+					System.out.println(
+							"Result For \"" + getSearchKeyword(pfn) + "\" in site: " + getServiceProvider().name());
+				} catch (ParseException | IOException e) {
+					e.printStackTrace();
+				}
+			} else {
+				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href,
+						getArchiveForLink(pfn, href));
 				results.add(entry);
-			} catch (ParseException | IOException e) {
-				e.printStackTrace();
 			}
-			System.out.println("Subtitle: " + subZipName + " Link: " + href);
-
 		}
 		return results;
 	}
 
 	protected abstract MultivaluedMap<String, String> getFormData(ParsedFileName pfn, WebResource.Builder builder);
 
-	protected abstract List<Element> getFilteredLinks(Document siteResults);
+	protected abstract List<String> getSubArchiveLinks(Document siteResults);
 
 	protected abstract void setProivderHeaders(WebResource.Builder builder);
 
