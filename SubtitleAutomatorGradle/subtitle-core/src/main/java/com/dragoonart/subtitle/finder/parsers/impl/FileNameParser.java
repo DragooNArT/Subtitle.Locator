@@ -20,7 +20,7 @@ public class FileNameParser implements IFileNameParser {
 	Pattern matchYear = Pattern.compile("\\d\\d\\d\\d");
 	Pattern dotSepPattern = Pattern.compile("\\d{1,}[.]\\d{1,}");
 
-	private static final String[] allForRemoval = new String[] { "HDTV", "HEVC", "UNRATED", "BluRay", "x265", "DTS-HD",
+	private static final String[] allForRemoval = new String[] { "XviD","HDTV", "HEVC", "UNRATED", "BluRay", "x265", "DTS-HD",
 			"X264", "WEB-DL", "H264", "DDC5", "AAC5", "DTS", "HDRip", "DD5", "BRRip" };
 
 	FileNameParser() {
@@ -97,7 +97,7 @@ public class FileNameParser implements IFileNameParser {
 		List<String> forRemoval = new ArrayList<>();
 		resolveResolution(split, forRemoval, result);
 		resolveForRemoval(split, forRemoval, result);
-		resolveYearForRemoval(split, forRemoval, result);
+		resolveYearForRemoval(split, result);
 		for (String forRem : forRemoval) {
 			split.remove(forRem);
 		}
@@ -105,12 +105,11 @@ public class FileNameParser implements IFileNameParser {
 
 	}
 
-	private void resolveYearForRemoval(List<String> split, List<String> forRemoval, Map<String, String> result) {
+	private void resolveYearForRemoval(List<String> split, Map<String, String> result) {
 		for (String entry : split) {
 			Matcher matcher = matchYear.matcher(entry);
 			if (matcher.matches() && Integer.parseInt(entry) > 1970) {
 				result.put(SHOW_YEAR, entry);
-				forRemoval.add(entry);
 				break;
 			}
 		}
@@ -156,9 +155,7 @@ public class FileNameParser implements IFileNameParser {
 	}
 
 	private boolean isForRemoval(String entry) {
-		if (entry.length() <= 2) {
-			return true;
-		}
+
 		for (String remEntry : allForRemoval) {
 			if (remEntry.equalsIgnoreCase(entry)) {
 				return true;
@@ -168,7 +165,7 @@ public class FileNameParser implements IFileNameParser {
 	}
 
 	@Override
-	public Map<String, String> getParsedName(String origName) {
+	public Map<String, String> getParsedName(String origName) throws Exception {
 		Map<String, String> result = new HashMap<String, String>();
 		if (!canSplit(origName)) {
 			result.put(SHOW_NAME, origName);

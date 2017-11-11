@@ -25,7 +25,7 @@ public enum PreferencesManager {
 	}
 
 	protected void init() {
-		prefsRootDir = Paths.get("./userSettings");
+		prefsRootDir = Paths.get(System.getProperty("user.home") + "/.subFinder");
 		prefLocFile = prefsRootDir.resolve("locations.prop");
 		if (!Files.exists(prefsRootDir)) {
 			try {

@@ -8,7 +8,6 @@ import javafx.fxml.FXML;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
-import javafx.stage.DirectoryChooser;
 
 public class ChooseLocationController {
 

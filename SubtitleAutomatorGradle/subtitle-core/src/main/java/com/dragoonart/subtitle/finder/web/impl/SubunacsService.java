@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.nodes.Document;
+import org.slf4j.LoggerFactory;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.web.AbstractSubtitleService;
@@ -14,7 +15,14 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class SubunacsService extends AbstractSubtitleService {
+	
+	@Override
+	protected void init() {
+		// TODO Auto-generated method stub
+		super.init();
+		logger = LoggerFactory.getLogger(getClass());
 
+	}
 	@Override
 	public SubtitleProvider getServiceProvider() {
 		return SubtitleProvider.SUBUNACS;

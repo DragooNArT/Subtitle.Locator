@@ -1,5 +1,6 @@
 package com.dragoonart.subtitle.finder;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -10,34 +11,33 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.zip.ZipEntryCallback;
 import org.zeroturnaround.zip.ZipUtil;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
-import com.github.junrar.Archive;
-import com.github.junrar.exception.RarException;
-import com.github.junrar.rarfile.FileHeader;
+
+import de.innosystec.unrar.Archive;
+import de.innosystec.unrar.NativeStorage;
+import de.innosystec.unrar.rarfile.FileHeader;
 
 public class SubtitleFileUtils {
-
+	
+	private static final Logger logger = LoggerFactory.getLogger(SubtitleFileUtils.class);
+	
 	public static Map<String, Path> unpackSubs(Path pathToZip, Path targetDir) {
 		Map<String, Path> result = new HashMap<String, Path>();
 		if (pathToZip != null && Files.exists(pathToZip)) {
-			if (pathToZip.getFileName().toString().endsWith(".zip")) {
-				// zip lib attempt
-				try {
+			try {
+				if (pathToZip.getFileName().toString().endsWith(".zip")) {
 					extractZip(pathToZip, targetDir, result);
-				} catch (Exception e) {
-					System.out.println("failed apache extract for: " + pathToZip);
-					e.printStackTrace();
-				}
-			} else if (pathToZip.getFileName().toString().endsWith(".rar")) {
-				try {
+				} else if (pathToZip.getFileName().toString().endsWith(".rar")) {
 					extractRrar(pathToZip, targetDir, result);
-				} catch (Exception e2) {
-					System.out.println("failed apache extract for: " + pathToZip);
-					e2.printStackTrace();
 				}
+			} catch (Exception e) {
+				logger.error("failed archive unpack for: " + pathToZip.getFileName().toString(), e);
+				e.printStackTrace();
 			}
 		}
 		return result;
@@ -55,7 +55,7 @@ public class SubtitleFileUtils {
 	}
 
 	private static void extractRrar(Path pathToZip, Path targetDir, Map<String, Path> result) {
-		try (Archive arch = new Archive(pathToZip.toFile())) {
+		try (Archive arch = new Archive(new NativeStorage(pathToZip.toFile()))) {
 			FileHeader fh;
 			while ((fh = arch.nextFileHeader()) != null) {
 				String fileName = fh.getFileNameString();
@@ -66,21 +66,26 @@ public class SubtitleFileUtils {
 					} else {
 						newFilePath = targetDir.resolve(fh.getFileNameString());
 					}
-					if (!Files.exists(newFilePath)) {
-						Files.createDirectories(newFilePath.getParent());
-						Files.copy(arch.getInputStream(fh), newFilePath);
-					}
+					FileOutputStream os = null;
 					try {
+						if (!Files.exists(newFilePath)) {
+							Files.createDirectories(newFilePath.getParent());
+							os = new FileOutputStream(newFilePath.toFile());
+							arch.extractFile(fh, os);
+						}
 						result.put(fileName, newFilePath);
 					} catch (Throwable ex) {
-						System.out.println("Bad fileName: " + fileName);
-						ex.printStackTrace();
+						logger.warn("Bad RAR fileName: " + fileName, ex);
+					} finally {
+						if(os != null) {
+							os.close();
+						}
 					}
 				}
 
 			}
-		} catch (RarException | IOException e1) {
-			e1.printStackTrace();
+		} catch (Exception e1) {
+			logger.warn("Bad rar archive: " + pathToZip.toFile(), e1);
 		}
 		
 	}
@@ -106,7 +111,7 @@ public class SubtitleFileUtils {
 					try {
 						result.put(fileName, newFilePath);
 					} catch (Throwable ex) {
-						System.out.println("Bad fileName: " + fileName);
+						logger.error("Bad fileName: " + fileName,ex);
 						ex.printStackTrace();
 					}
 				}
@@ -126,8 +131,7 @@ public class SubtitleFileUtils {
 			boolean valid = c >= 'a' && c <= 'z';
 			valid = valid || (c >= 'A' && c <= 'Z');
 			valid = valid || (c >= '0' && c <= '9');
-			valid = valid || (c == '_') || (c == '-') || (c == '.') || (c == '#')
-					|| (false && ((c == '/') || (c == '\\')));
+			valid = valid || (c == '_') || (c == '-') || (c == '.') || (c == '#');
 
 			if (valid) {
 				rc.append(c);
@@ -144,6 +148,6 @@ public class SubtitleFileUtils {
 	}
 	
 	public static Path getArchivesDir(ParsedFileName pfn) {
-		return Paths.get("./testFiles/" + pfn.getOrigName() + "/archives");
+		return Paths.get(System.getProperty("user.home") + "/.subFinder/testFiles/" + pfn.getOrigName() + "/archives");
 	}
 }

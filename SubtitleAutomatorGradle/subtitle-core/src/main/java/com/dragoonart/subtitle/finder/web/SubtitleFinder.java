@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 
@@ -15,13 +18,14 @@ import stormpot.Slot;
 public class SubtitleFinder implements Poolable {
 
 	private static Map<SubtitleProvider, AbstractSubtitleService> servicesList = new HashMap<SubtitleProvider, AbstractSubtitleService>();
+	private static Logger logger= LoggerFactory.getLogger(SubtitleFinder.class);
 	
 	static {
 		for (SubtitleProvider sf : SubtitleProvider.values()) {
 			try {
 				servicesList.put(sf, sf.getServiceClass().newInstance());
-			} catch (InstantiationException | IllegalAccessException e) {
-				System.out.println("Unable to load service provider: " + sf.getBaseUrl());
+			} catch (Exception e) {
+				logger.error("Unable to load service provider: " + sf.getBaseUrl(), e);
 				e.printStackTrace();
 			}
 		}
@@ -38,9 +42,8 @@ public class SubtitleFinder implements Poolable {
 			try {
 			result.addAll(ss.getSubtitles(ve));
 			ve.addSubtitles(result);
-			ve.setSubtitlesProcessed(true);
 			} catch(Exception e) {
-				System.out.println("Failed too lookup subs in: "+ss.getServiceProvider().getBaseUrl());
+				logger.error("Failed too lookup subs in: "+ss.getServiceProvider().getBaseUrl(), e);
 				e.printStackTrace();
 			}
 		}

@@ -3,11 +3,15 @@ package com.dragoonart.subtitle.finder.beans;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
 import com.dragoonart.subtitle.finder.parsers.impl.ParserFactory;
 
 public class ParsedFileName {
-
+	
+	private static final Logger logger = LoggerFactory.getLogger(ParsedFileName.class);
 	private int version = -1;
 	private String origName;
 	private Map<String, String> parsedAttributes = new HashMap<String, String>();
@@ -78,8 +82,12 @@ public class ParsedFileName {
 	private void load() {
 		if (nameParser.getVersion() > version) {
 			parsedAttributes.clear();
+			try {
 			parsedAttributes = nameParser.getParsedName(getOrigName());
 			version = nameParser.getVersion();
+			} catch(Exception e) {
+				logger.error("Unable to parse file with name: "+getOrigName(), e);
+			}
 		}
 	}
 

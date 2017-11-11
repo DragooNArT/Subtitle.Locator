@@ -12,6 +12,6 @@ public interface IFileNameParser {
 	
 	public int getVersion();
 	
-	public Map<String, String> getParsedName(String origName);
+	public Map<String, String> getParsedName(String origName) throws Exception;
 	
 }

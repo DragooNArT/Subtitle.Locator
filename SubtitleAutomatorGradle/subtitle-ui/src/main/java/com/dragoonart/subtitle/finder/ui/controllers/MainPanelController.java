@@ -15,6 +15,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.text.Text;
 
@@ -36,6 +37,13 @@ public class MainPanelController {
 
 	@FXML
 	private Button addFolder;
+	
+	@FXML
+	private CheckBox showAllbtn;
+
+	public CheckBox getShowAllbtn() {
+		return showAllbtn;
+	}
 
 	@FXML
 	private CharmListView<VideoEntry, ?> videosList;
@@ -51,6 +59,9 @@ public class MainPanelController {
 
 	@FXML
 	private Text Release;
+	
+	@FXML
+    private Button searchBtn;
 
 	@FXML
 	private CharmListView<Path, ?> subtitlesList;
@@ -104,6 +115,23 @@ public class MainPanelController {
 			
 		});
 	}
+	
+	@FXML
+	void filterVideos(ActionEvent event) {
+		if (event.getSource() == showAllbtn) {
+			manager.filterVideos(showAllbtn.isSelected());
+		}
+		
+	}
+	  
+	@FXML
+	void searchForSubs(ActionEvent event) {
+		if(event.getSource() == searchBtn) {
+			System.out.println(event);
+			new Thread(() -> manager.loadSubsForVideo(videosList.getSelectedItem())).start();
+		}
+	}
+	   
 	@FXML
 	void initialize() {
 		

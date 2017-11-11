@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import org.slf4j.LoggerFactory;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.web.AbstractSubtitleService;
@@ -19,10 +19,14 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 public class SubsabService extends AbstractSubtitleService {
 
 	private Pattern pattern_subLinks = Pattern.compile(".*&attach_id=\\d*");
+	
+	@Override
+	protected void init() {
+		// TODO Auto-generated method stub
+		super.init();
+		logger = LoggerFactory.getLogger(getClass());
 
-	public SubsabService() {
 	}
-
 	@Override
 	public SubtitleProvider getServiceProvider() {
 		return SubtitleProvider.SUBS_SAB;

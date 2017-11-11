@@ -80,7 +80,7 @@ public class SubtitleArchiveEntry {
 		return true;
 	}
 
-	public String getSubtitleName() {
+	public String getSubtitleArchiveName() {
 		return pathToSubtitle.getFileName().toString();
 	}
 }

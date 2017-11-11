@@ -8,16 +8,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.dragoonart.subtitle.finder.SubtitleFileScanner;
 import com.dragoonart.subtitle.finder.SubtitleFileUtils;
+import com.dragoonart.subtitle.finder.VideoState;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
@@ -28,6 +30,7 @@ import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.dragoonart.subtitle.finder.web.SubtitleFinderAllocator;
 import com.gluonhq.charm.glisten.control.CharmListCell;
 import com.gluonhq.charm.glisten.control.ListTile;
+import com.gluonhq.charm.glisten.control.ProgressIndicator;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -91,7 +94,7 @@ public class MainPanelManager extends BaseManager {
 	}
 
 	private ScheduledThreadPoolExecutor stpex = new ScheduledThreadPoolExecutor(1);
-	private Set<VideoEntry> veSet = new HashSet<VideoEntry>();
+	private Set<VideoEntry> veSet = new LinkedHashSet<VideoEntry>();
 
 	public void loadFolderVideos(Path toFolder) {
 		// reset videos
@@ -109,57 +112,39 @@ public class MainPanelManager extends BaseManager {
 
 	private void scanFolderForVideos() {
 		synchronized (veSet) {
-			Set<VideoEntry> subtitlessVideos = subFscanner.getFolderVideos();
-			Set<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
+			SortedSet<VideoEntry> subtitlessVideos = subFscanner.getFolderVideos();
+			SortedSet<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
 			// add only the new entries
-			Set<VideoEntry> tempAll = new HashSet<>();
 
-			tempAll.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toSet()));
-			tempAll.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toSet()));
-			veSet.addAll(tempAll);
+			veSet.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
+
+			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
 			// leave only the entries which really have existing videos
-			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toSet());
+			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toCollection(LinkedHashSet::new));
 			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
 			
-//			list.addAll(tempAll);
-			updateVideosList(tempAll, list);
+			updateVideosList(veSet, list);
 			for (VideoEntry entry : veSet) {
 				new Thread(() -> {
+
 					// look for subs if neccessary
-					if (!entry.hasSubtitles() && !entry.isSubtitlesProcessed()) {
-						SubtitleFinder object = null;
-						try {
-							object = pool.claim(timeout);
-							if (object != null) {
-								Set<SubtitleArchiveEntry> saE = object.lookupEverywhere(entry);
-								if(!saE.isEmpty()) {
-									Platform.runLater(() -> getController().getVideosList().refresh());
-								}
-							} else {
-								System.out.println("Unable to look for: " + entry.toString());
-							}
-							// Do stuff with 'object'.
-							// Note: 'claim' returns 'null' if it times out.
-						} catch (PoolException | InterruptedException e1) {
-							e1.printStackTrace();
-						} finally {
-							if (object != null) {
-								object.release();
-							}
-						}
+					if (entry.getState() == VideoState.PENDING) {
+						loadSubsForVideo(entry);
 					}
+
 					// apply subs if neccessary
 					if (entry.hasSubtitles() && !SubtitleFileUtils.hasSubs(entry.getPathToFile())) {
-						if(subFscanner.autoApplySubtitles(entry)) {
+						if (subFscanner.autoApplySubtitles(entry)) {
 							Platform.runLater(() -> getController().getVideosList().refresh());
 							addNotificationForVideo(entry);
 						}
 
 					}
-					// add entry to list if new
-					if (!list.contains(entry)) {
-						updateVideosList(entry, list);
-					}
+
+//					// add entry to list if new
+//					if (!list.contains(entry)) {
+//						updateVideosList(entry, list);
+//					}
 
 				}).start();
 			}
@@ -192,19 +177,32 @@ public class MainPanelManager extends BaseManager {
 	private void updateVideosList(VideoEntry entry, ObservableList<VideoEntry> list) {
 		Platform.runLater(() -> {
 			list.add(entry);
-			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
-			panelCtrl.getVideosList().setItems(list);
+//			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+//			panelCtrl.getVideosList().setItems(list);
 		});
 	}
 
 	private void updateVideosList(Set<VideoEntry> entries, ObservableList<VideoEntry> list) {
 		Platform.runLater(() -> {
-			list.addAll(entries);
-			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+			list.clear();
+			list.addAll(panelCtrl.getShowAllbtn().isSelected() ? entries
+					: entries.stream().filter(e -> !SubtitleFileUtils.hasSubs(e.getPathToFile()))
+							.collect(Collectors.toCollection(LinkedHashSet::new)));
 			panelCtrl.getVideosList().setItems(list);
 		});
 	}
-
+	
+	public void filterVideos(boolean showAll) {
+		
+		Platform.runLater(() -> {
+			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
+			list.clear();
+			list.addAll(showAll ? veSet
+					: veSet.stream().filter(e -> !SubtitleFileUtils.hasSubs(e.getPathToFile()))
+							.collect(Collectors.toCollection(LinkedHashSet::new)));
+			panelCtrl.getVideosList().setItems(list);
+		});
+	}
 	private void addNotificationForVideo(VideoEntry entry) {
 		if (!StartUI.isUiVisible() && entry.hasSubtitles()) {
 			Platform.runLater(() -> StartUI.trayIcon.displayMessage(entry.getFileName(),
@@ -241,21 +239,23 @@ public class MainPanelManager extends BaseManager {
 
 			private void loadVideoTIle(VideoEntry ve) {
 				ListTile tile = new ListTile();
-				if (!ve.hasSubtitles()) {
-					tile.setStyle("-fx-background-color: #f9f7f7;");
-				} else if (ve.hasSubtitles()) {
-					tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
-							: "-fx-background-color: #ffff00;");
-				}
-				SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
+				tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
+						: ve.hasSubtitles() ? "-fx-background-color: #ffff00;" : "-fx-background-color: #f9f7f7;");
+
+				SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+				tile.setPrefHeight(30);
 				String dateAdded = sdf.format(ve.getPathToFile().toFile().lastModified());
 				if (ve.getFileName().equals(ve.getAcceptableFileName())) {
 					tile.textProperty().add(ve.getFileName() + " " + dateAdded);
 				} else {
 					tile.textProperty().add(ve.getAcceptableFileName() + "/" + ve.getFileName() + " " + dateAdded);
 				}
-
+				if (ve.getState() == VideoState.LOADING) {
+					ProgressIndicator pInd = new ProgressIndicator();
+					pInd.setMaxHeight(30);
+					tile.setSecondaryGraphic(pInd);
+				}
 				// final Image image = USStates.getImage(item.getFlag());
 				// if(image!=null){
 				// tile.setPrimaryGraphic(new ImageView(image));
@@ -312,6 +312,33 @@ public class MainPanelManager extends BaseManager {
 		}
 		if (pfn.hasRelease()) {
 			panelCtrl.getReleaseField().setText("Release: " + pfn.getRelease());
+		}
+	}
+
+	public void loadSubsForVideo(VideoEntry entry) {
+		if (entry == null) {
+			return;
+		}
+		SubtitleFinder finder = null;
+		try {
+			finder = pool.claim(timeout);
+			if (finder != null) {
+				entry.setState(VideoState.LOADING);
+				Platform.runLater(() -> getController().getVideosList().refresh());
+				finder.lookupEverywhere(entry);
+				entry.setState(VideoState.FINISHED);
+				Platform.runLater(() -> getController().getVideosList().refresh());
+			} else {
+				System.out.println("Unable to look for: " + entry.toString());
+			}
+			// Do stuff with 'object'.
+			// Note: 'claim' returns 'null' if it times out.
+		} catch (PoolException | InterruptedException e1) {
+			e1.printStackTrace();
+		} finally {
+			if (finder != null) {
+				finder.release();
+			}
 		}
 	}
 }

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +14,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
 
 import com.dragoonart.subtitle.finder.SubtitleFileUtils;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
@@ -26,9 +26,9 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.header.ContentDisposition;
 
 public abstract class AbstractSubtitleService {
-
+	
 	protected Client client;
-
+	protected Logger logger;
 	public AbstractSubtitleService() {
 		init();
 	}
@@ -42,7 +42,7 @@ public abstract class AbstractSubtitleService {
 	 */
 	public Set<SubtitleArchiveEntry> getSubtitles(VideoEntry ve) {
 		String searchWord = getSearchKeyword(ve.getParsedFilename());
-		System.out.println("Looking for \"" + searchWord + "\" in site: " + getServiceProvider().getBaseUrl());
+		logger.trace("Looking for \"" + searchWord + "\" in site: " + getServiceProvider().getBaseUrl());
 		WebResource.Builder builder = client.resource(getServiceProvider().getSearchUrl()).getRequestBuilder();
 
 		ClientResponse resp = builder
@@ -95,7 +95,7 @@ public abstract class AbstractSubtitleService {
 
 		ClientResponse res = builder.post(ClientResponse.class);
 		if (res.getStatus() != 200) {
-			System.out.println(
+			logger.error(
 					"search failed with code: " + res.getStatus() + "\n and Content:\n" + res.getEntity(String.class));
 			return null;
 		}
@@ -106,7 +106,7 @@ public abstract class AbstractSubtitleService {
 				+ cdp.getFileName().substring(cdp.getFileName().lastIndexOf(".")));
 		if (!Files.exists(file.toAbsolutePath())) {
 			try (InputStream subZip = res.getEntityInputStream()) {
-				System.out.println("Writing archive with path: " + file.toString());
+				logger.trace("Writing archive with path: " + file.toString());
 				Files.createDirectories(dir);
 				Files.copy(subZip, file.toAbsolutePath());
 				subZip.close();
@@ -138,8 +138,8 @@ public abstract class AbstractSubtitleService {
 					subtitleZip = downloadSubtitleArchive(pfn, href);
 					SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href, subtitleZip);
 					results.add(entry);
-					System.out.println(
-							"Result For \"" + getSearchKeyword(pfn) + "\" in site: " + getServiceProvider().name());
+					logger.info(
+							"Found: '"+ entry.getSubtitleArchiveName() + "',  for keyword: '" + getSearchKeyword(pfn) + "', in site: " + getServiceProvider().name());
 				} catch (ParseException | IOException e) {
 					e.printStackTrace();
 				}
