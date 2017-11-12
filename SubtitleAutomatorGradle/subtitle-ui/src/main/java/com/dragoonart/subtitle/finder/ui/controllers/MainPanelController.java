@@ -127,7 +127,6 @@ public class MainPanelController {
 	@FXML
 	void searchForSubs(ActionEvent event) {
 		if(event.getSource() == searchBtn) {
-			System.out.println(event);
 			new Thread(() -> manager.loadSubsForVideo(videosList.getSelectedItem())).start();
 		}
 	}

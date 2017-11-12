@@ -91,7 +91,7 @@ public class VideoEntry implements Comparable<VideoEntry> {
 		return true;
 	}
 
-	public Set<SubtitleArchiveEntry> getSubtitles() {
+	public Set<SubtitleArchiveEntry> getSubtitleArchives() {
 		return subtitles;
 	}
 

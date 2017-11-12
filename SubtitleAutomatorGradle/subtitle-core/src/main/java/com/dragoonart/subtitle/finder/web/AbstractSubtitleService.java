@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,20 +45,29 @@ public abstract class AbstractSubtitleService {
 		String searchWord = getSearchKeyword(ve.getParsedFilename());
 		logger.trace("Looking for \"" + searchWord + "\" in site: " + getServiceProvider().getBaseUrl());
 		WebResource.Builder builder = client.resource(getServiceProvider().getSearchUrl()).getRequestBuilder();
-
-		ClientResponse resp = builder
+		ClientResponse resp = null;
+		try {
+		resp = builder
 				.entity(getFormData(ve.getParsedFilename(), builder), MediaType.APPLICATION_FORM_URLENCODED)
 				.post(ClientResponse.class);
+		return getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)),
+				ve.getParsedFilename());
+		} catch (Exception e) {
+			logger.error("Failed to get subtitle archives from: "+getServiceProvider().getBaseUrl()+" for video: "+ve.getFileName(), e);
+		} finally {
+			if(resp != null && resp.hasEntity()) {
+				resp.close();
+			}
+		}
 		// TODO don't log already downloaded subs
 		// do the work
-		Set<SubtitleArchiveEntry> subZips = getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)),
-				ve.getParsedFilename());
+		
 
 		// for (SubtitleArchiveEntry zip : subZips) {
 		// System.out.println(zip.getSubtitleName());
 		// }
 
-		return subZips;
+		return Collections.emptySet();
 	}
 
 	/**

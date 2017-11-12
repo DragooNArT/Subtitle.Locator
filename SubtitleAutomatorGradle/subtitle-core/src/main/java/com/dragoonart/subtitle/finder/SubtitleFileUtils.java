@@ -1,8 +1,9 @@
 package com.dragoonart.subtitle.finder;
 
-import java.io.FileOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,14 +19,11 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 
-import de.innosystec.unrar.Archive;
-import de.innosystec.unrar.NativeStorage;
-import de.innosystec.unrar.rarfile.FileHeader;
-
 public class SubtitleFileUtils {
-	
+
+	private static final String PATH_TO_UNRAR = "C:\\Program Files\\WinRAR\\UnRAR.exe";
 	private static final Logger logger = LoggerFactory.getLogger(SubtitleFileUtils.class);
-	
+
 	public static Map<String, Path> unpackSubs(Path pathToZip, Path targetDir) {
 		Map<String, Path> result = new HashMap<String, Path>();
 		if (pathToZip != null && Files.exists(pathToZip)) {
@@ -42,7 +40,7 @@ public class SubtitleFileUtils {
 		}
 		return result;
 	}
-	
+
 	public static boolean hasSubs(Path file) {
 		// calculate if it already has subtitles
 		String fileName = file.getFileName().toString();
@@ -55,39 +53,51 @@ public class SubtitleFileUtils {
 	}
 
 	private static void extractRrar(Path pathToZip, Path targetDir, Map<String, Path> result) {
-		try (Archive arch = new Archive(new NativeStorage(pathToZip.toFile()))) {
-			FileHeader fh;
-			while ((fh = arch.nextFileHeader()) != null) {
-				String fileName = fh.getFileNameString();
-				if (isSubtitleEntry(fileName)) {
-					Path newFilePath;
-					if (targetDir == null) {
-						newFilePath = pathToZip.getParent().resolve(fh.getFileNameString());
-					} else {
-						newFilePath = targetDir.resolve(fh.getFileNameString());
-					}
-					FileOutputStream os = null;
-					try {
-						if (!Files.exists(newFilePath)) {
-							Files.createDirectories(newFilePath.getParent());
-							os = new FileOutputStream(newFilePath.toFile());
-							arch.extractFile(fh, os);
-						}
-						result.put(fileName, newFilePath);
-					} catch (Throwable ex) {
-						logger.warn("Bad RAR fileName: " + fileName, ex);
-					} finally {
-						if(os != null) {
-							os.close();
-						}
-					}
-				}
-
-			}
-		} catch (Exception e1) {
-			logger.warn("Bad rar archive: " + pathToZip.toFile(), e1);
+		BufferedReader in = null;
+		Process child = null;
+		StringBuilder responseData = new StringBuilder();
+		if (!Files.exists(Paths.get(PATH_TO_UNRAR))) {
+			logger.warn("Can't open rar file! couldn't find C:\\Program Files\\WinRAR\\UnRAR.exe");
+			return;
 		}
-		
+		try {
+			ProcessBuilder ps = new ProcessBuilder(PATH_TO_UNRAR, "e", "-o+",
+					"\"" + pathToZip.toAbsolutePath().toString() + "\"");
+			ps.directory(targetDir.toAbsolutePath().toFile());
+			// Execute command
+			child = ps.start();
+
+			// Get output stream to write from it
+			in = new BufferedReader(new InputStreamReader(child.getInputStream(), "UTF-8"));
+			String line = null;
+			while ((line = in.readLine()) != null) {
+				responseData.append(line).append("\n");
+				line = line.replace("Extracting ", "");
+				line = line.replace("Skipping ", "");
+				line = line.replace(" OK ", "");
+				line = line.indexOf('') > -1 ? line.substring(0, line.indexOf('')).trim() : line.trim();
+				if (isSubtitleEntry(line) && Files.exists(targetDir.resolve(line))) {
+					result.put(line, targetDir.resolve(line));
+				}
+			}
+			if (result.isEmpty()) {
+				logger.warn("Couldn't find any subs inside: " + pathToZip);
+			}
+		} catch (Exception e) {
+			logger.error("unable to extract rar for : " + pathToZip.toString() + " output of unrar: "
+					+ responseData.toString());
+		} finally {
+			if (in != null) {
+				try {
+					in.close();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
+			if (child != null) {
+				child.destroy();
+			}
+		}
 	}
 
 	private static void extractZip(Path pathToZip, Path targetDir, Map<String, Path> result) {
@@ -111,7 +121,7 @@ public class SubtitleFileUtils {
 					try {
 						result.put(fileName, newFilePath);
 					} catch (Throwable ex) {
-						logger.error("Bad fileName: " + fileName,ex);
+						logger.error("Bad fileName: " + fileName, ex);
 						ex.printStackTrace();
 					}
 				}
@@ -146,7 +156,7 @@ public class SubtitleFileUtils {
 		}
 		return result;
 	}
-	
+
 	public static Path getArchivesDir(ParsedFileName pfn) {
 		return Paths.get(System.getProperty("user.home") + "/.subFinder/testFiles/" + pfn.getOrigName() + "/archives");
 	}

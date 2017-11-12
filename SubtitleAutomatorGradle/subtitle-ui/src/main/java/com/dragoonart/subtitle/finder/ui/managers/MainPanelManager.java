@@ -17,6 +17,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dragoonart.subtitle.finder.SubtitleFileScanner;
 import com.dragoonart.subtitle.finder.SubtitleFileUtils;
 import com.dragoonart.subtitle.finder.VideoState;
@@ -42,6 +45,7 @@ import stormpot.PoolException;
 import stormpot.Timeout;
 
 public class MainPanelManager extends BaseManager {
+	private static final Logger logger = LoggerFactory.getLogger(MainPanelManager.class);
 	private MainPanelController panelCtrl;
 
 	SubtitleFinderAllocator allocator = new SubtitleFinderAllocator();
@@ -104,8 +108,7 @@ public class MainPanelManager extends BaseManager {
 			try {
 				scanFolderForVideos();
 			} catch (Exception e) {
-				System.out.println("Main scanning exec failed!!!: ");
-				e.printStackTrace();
+				logger.error("Main scanning exec failed!!!: ", e);
 			}
 		}, 0, 60, TimeUnit.SECONDS);
 	}
@@ -116,9 +119,10 @@ public class MainPanelManager extends BaseManager {
 			SortedSet<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
 			// add only the new entries
 
+			
+			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
 			veSet.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
 
-			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
 			// leave only the entries which really have existing videos
 			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toCollection(LinkedHashSet::new));
 			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
@@ -206,7 +210,7 @@ public class MainPanelManager extends BaseManager {
 	private void addNotificationForVideo(VideoEntry entry) {
 		if (!StartUI.isUiVisible() && entry.hasSubtitles()) {
 			Platform.runLater(() -> StartUI.trayIcon.displayMessage(entry.getFileName(),
-					"Found " + entry.getSubtitles().size() + " subtitles", MessageType.INFO));
+					"Found " + entry.getSubtitleArchives().size() + " subtitles", MessageType.INFO));
 		}
 
 	}
@@ -234,12 +238,11 @@ public class MainPanelManager extends BaseManager {
 			public void updateItem(VideoEntry ve, boolean empty) {
 				super.updateItem(ve, empty);
 				loadVideoTIle(ve);
-				this.setOnMouseClicked(panelCtrl.getVideoSelListener());
 			}
 
 			private void loadVideoTIle(VideoEntry ve) {
 				ListTile tile = new ListTile();
-
+				tile.setOnMouseClicked(panelCtrl.getVideoSelListener());
 				tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
 						: ve.hasSubtitles() ? "-fx-background-color: #ffff00;" : "-fx-background-color: #f9f7f7;");
 
@@ -329,7 +332,7 @@ public class MainPanelManager extends BaseManager {
 				entry.setState(VideoState.FINISHED);
 				Platform.runLater(() -> getController().getVideosList().refresh());
 			} else {
-				System.out.println("Unable to look for: " + entry.toString());
+				logger.warn("Timed out waiting for SubtitleFinder object " + entry.toString());
 			}
 			// Do stuff with 'object'.
 			// Note: 'claim' returns 'null' if it times out.

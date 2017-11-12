@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -76,7 +77,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 				return false;
 			}
 			String subRelease = pfn.getRelease();
-			//check if releases match
+			// check if releases match
 			if (StringUtils.startsWithIgnoreCase(release, subRelease)) {
 				try {
 					Path newFilePath = ve.getPathToFile().getParent()
@@ -103,37 +104,48 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 	}
 
 	public boolean autoApplySubtitles(VideoEntry ve) {
-		
+
 		// TODO implement auto application in any case there's valid subs
 		// boolean foundSuitable = false;
-		for(SubtitleArchiveEntry e : ve.getSubtitles()) {
 
-			for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
-				
-				if (areSuitableSubtitles(ve, entry)) {
-					// foundSuitable = true;
-					logger.info("Found and applied subs to: "+ ve.getAcceptableFileName());
-					return true;
-				}
-			}
-
-		};
-		return false;
+		if (!applyIfSingleSubFound(ve)) {
+			return analyzeAndApplySubtitles(ve);
+		} else {
+			return true;
+		}
 		// //if can't approximate subtitles, apply the first entry
 		// if(!foundSuitable && !ve.getSubtitles().isEmpty()) {
 		// applyFirstFound(ve, ve.getSubtitles().iterator().next());
 		// }
 	}
 
-	private void applyFirstFound(VideoEntry ve, SubtitleArchiveEntry e) {
-		Path entry = e.getSubtitleEntries().get(0);
-		Path newFilePath = ve.getPathToFile().getParent().resolve(ve.getFileName().concat(".srt"));
-		try {
-			copySubtitleToMovie(newFilePath, entry);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+	private boolean analyzeAndApplySubtitles(VideoEntry ve) {
+		for (SubtitleArchiveEntry e : ve.getSubtitleArchives()) {
+			for (Entry<String, Path> entry : e.getSubtitleEntries().entrySet()) {
+				if (areSuitableSubtitles(ve, entry)) {
+					// foundSuitable = true;
+					logger.info("Found and applied subs to: " + ve.getAcceptableFileName());
+					return true;
+				}
+			}
 		}
+		return false;
+	}
+
+	private boolean applyIfSingleSubFound(VideoEntry ve) {
+		if (ve.getSubtitleArchives().size() == 1) {
+			Map<String, Path> subtitleEntries = ve.getSubtitleArchives().iterator().next().getSubtitleEntries();
+			if (subtitleEntries.size() == 1) {
+				Path newFilePath = ve.getPathToFile().getParent().resolve(ve.getFileName().concat(".srt"));
+				try {
+					copySubtitleToMovie(newFilePath, subtitleEntries.values().iterator().next());
+					return true;
+				} catch (Exception e1) {
+					logger.error("unable to copy subtitle to:" + newFilePath, e1);
+				}
+			}
+		}
+		return false;
 	}
 
 	private void copySubtitleToMovie(Path newFilePath, Path entry) throws IOException {
@@ -160,8 +172,6 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 		// doesn't match the extension list
 		return false;
 	}
-
-	
 
 	private boolean isSample(Path file) {
 		// assert it's not a sample file
@@ -198,8 +208,8 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 		return super.visitFile(file, attrs);
 	}
 
-//	private boolean acceptSubtitle(String file) {
-//		return SubtitleFileUtils.isSubtitleEntry(file);
-//	}
+	// private boolean acceptSubtitle(String file) {
+	// return SubtitleFileUtils.isSubtitleEntry(file);
+	// }
 
 }

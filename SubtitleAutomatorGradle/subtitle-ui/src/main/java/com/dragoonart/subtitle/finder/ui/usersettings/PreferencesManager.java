@@ -14,12 +14,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.dragoonart.subtitle.finder.ui.StartUI;
+
 public enum PreferencesManager {
 	INSTANCE();
 	public static Path prefsRootDir;
 	public static Path prefLocFile;
 	private Set<Path> loadedPaths = new HashSet<Path>();
-
+	private static final Logger logger = LoggerFactory.getLogger(PreferencesManager.class);
+	
 	PreferencesManager() {
 		init();
 	}
@@ -32,8 +38,7 @@ public enum PreferencesManager {
 				Files.createDirectory(prefsRootDir);
 				Files.createFile(prefLocFile);
 			} catch (Exception e) {
-				System.out.println("Unable to create dir/file");
-				e.printStackTrace();
+				logger.error("Unable to create dir/file", e);
 			}
 		} else {
 			loadedPaths.addAll(getLocationPaths());
@@ -51,13 +56,11 @@ public enum PreferencesManager {
 					try {
 						paths.add(Paths.get(e));
 					} catch (Exception ex) {
-						System.out.println("unable to parse: " + e);
-						ex.printStackTrace();
+						logger.error("unable to parse: " + e,ex);
 					}
 				});
 			} catch (IOException e) {
-				System.out.println("unable to parse: " + prefLocFile);
-				e.printStackTrace();
+				logger.error("unable to parse: " + prefLocFile, e);
 			}
 		}
 		return paths;
