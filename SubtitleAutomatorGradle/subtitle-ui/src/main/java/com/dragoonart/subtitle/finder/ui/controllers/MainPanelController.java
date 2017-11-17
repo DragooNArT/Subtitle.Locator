@@ -14,9 +14,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.image.ImageView;
 import javafx.scene.text.Text;
 
 public class MainPanelController {
@@ -87,6 +89,9 @@ public class MainPanelController {
 	public Text getMovieNameField() {
 		return movieName;
 	}
+	
+	@FXML
+    private ImageView showImage;
 
 	public Text getYearField() {
 		return Year;
@@ -124,6 +129,10 @@ public class MainPanelController {
 		
 	}
 	  
+	public ImageView getShowImage() {
+		return showImage;
+	}
+	
 	@FXML
 	void searchForSubs(ActionEvent event) {
 		if(event.getSource() == searchBtn) {
@@ -150,5 +159,8 @@ public class MainPanelController {
 		subtitlesList.selectedItemProperty().addListener(subListener);
 		videosList.selectedItemProperty().addListener(videoSelListener);
 		addVideosFolderListener();
+	}
+	public Button getSearchButton() {
+		return searchBtn;
 	}
 }

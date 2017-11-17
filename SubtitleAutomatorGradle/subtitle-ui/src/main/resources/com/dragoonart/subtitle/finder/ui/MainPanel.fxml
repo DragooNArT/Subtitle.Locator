@@ -1,56 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.gluonhq.charm.glisten.control.CharmListView?>
+<?import javafx.geometry.Rectangle2D?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.TilePane?>
 <?import javafx.scene.text.Text?>
 
-<TilePane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="551.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dragoonart.subtitle.finder.ui.controllers.MainPanelController">
+<TilePane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="557.0" prefWidth="852.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dragoonart.subtitle.finder.ui.controllers.MainPanelController">
    <children>
-      <SplitPane dividerPositions="0.13114754098360656" focusTraversable="false" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0">
+      <SplitPane dividerPositions="0.17967332123411978" focusTraversable="false" orientation="VERTICAL">
         <items>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="74.0" prefWidth="638.0">
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="92.0" prefWidth="400.0">
                <children>
-                  <Pane prefHeight="81.0" prefWidth="640.0">
+                  <Pane prefHeight="106.0" prefWidth="424.0">
                      <children>
-                        <ChoiceBox fx:id="foldersList" layoutX="79.0" layoutY="25.0" prefHeight="28.0" prefWidth="315.0" />
-                        <Button fx:id="addFolder" layoutX="417.0" layoutY="23.0" mnemonicParsing="false" onAction="#addFolderLocation" text="Добави папка" />
-                        <CheckBox fx:id="showAllbtn" layoutX="79.0" layoutY="54.0" mnemonicParsing="false" onAction="#filterVideos" text="Покажи всички видеа" />
+                        <ChoiceBox fx:id="foldersList" layoutX="54.0" layoutY="25.0" prefHeight="28.0" prefWidth="220.0" />
+                        <Button fx:id="addFolder" layoutX="290.0" layoutY="23.0" mnemonicParsing="false" onAction="#addFolderLocation" prefHeight="31.0" prefWidth="108.0" style="-fx-font-size: 12;" text="Добави папка" />
+                        <CheckBox fx:id="showAllbtn" layoutX="54.0" layoutY="66.0" mnemonicParsing="false" onAction="#filterVideos" text="Покажи всички видеа" />
                      </children>
                   </Pane>
                </children>
             </AnchorPane>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="462.0" prefWidth="638.0">
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="453.0" prefWidth="400.0">
                <children>
-                  <CharmListView fx:id="videosList" layoutX="-1.0" prefHeight="686.0" prefWidth="640.0" />
+                  <CharmListView fx:id="videosList" prefHeight="476.0" prefWidth="424.0" />
                </children>
             </AnchorPane>
         </items>
       </SplitPane>
-      <BorderPane prefHeight="817.0" prefWidth="640.0">
-         <top>
-            <Pane prefHeight="79.0" prefWidth="640.0" BorderPane.alignment="CENTER">
+      <SplitPane dividerPositions="0.17881944444444445" nodeOrientation="LEFT_TO_RIGHT" orientation="VERTICAL" prefHeight="578.0" prefWidth="426.0">
+         <items>
+            <Pane prefHeight="123.0" prefWidth="426.0">
                <children>
-                  <Text fx:id="movieName" disable="true" layoutX="112.0" layoutY="40.0" text="Nothing" wrappingWidth="130.0" />
-                  <Text fx:id="Year" disable="true" layoutX="297.0" layoutY="42.0" text="Година" />
-                  <Text fx:id="Resolution" disable="true" layoutX="362.0" layoutY="41.0" text="Резолюция" wrappingWidth="78.0" />
-                  <Text fx:id="Release" disable="true" layoutX="455.0" layoutY="43.0" text="Релииз" wrappingWidth="55.0" />
-                  <Button fx:id="searchBtn" layoutX="25.0" layoutY="27.0" mnemonicParsing="false" onAction="#searchForSubs" text="Търси" />     
+                  <CharmListView fx:id="subtitlesList" floatingHeaderVisible="false" layoutY="1.0" prefHeight="99.0" prefWidth="426.0" />
                </children>
             </Pane>
-         </top>
-         <center>
-            <Pane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+            <Pane prefHeight="471.0" prefWidth="426.0">
                <children>
-                  <CharmListView fx:id="subtitlesList" layoutX="15.0" prefHeight="400.0" prefWidth="625.0" />
-               </children></Pane>
-         </center>
-      </BorderPane>
+                  <Text fx:id="movieName" disable="true" layoutX="102.0" layoutY="13.0" style="-fx-font-size: 20; -fx-font-family: arial;" textOrigin="CENTER" wrappingWidth="300.0000050663948" />
+                  <Text fx:id="Year" disable="true" layoutX="15.0" layoutY="109.0" text="Година" visible="false" wrappingWidth="70.00000081211329" />
+                  <Text fx:id="Resolution" disable="true" layoutX="11.0" layoutY="141.0" text="Резолюция" visible="false" wrappingWidth="78.00000013411045" />
+                  <Text fx:id="Release" disable="true" layoutX="11.0" layoutY="208.0" text="Релииз" visible="false" wrappingWidth="78.00000147614628" />
+                  <Button fx:id="searchBtn" layoutX="15.0" layoutY="33.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#searchForSubs" prefHeight="36.0" prefWidth="70.0" style="-fx-font-size: 16;" text="Търси" visible="false" />
+                  <ImageView fx:id="showImage" fitHeight="441.0" fitWidth="300.0" layoutX="102.0" layoutY="33.0" pickOnBounds="true" preserveRatio="true">
+                     <viewport>
+                        <Rectangle2D height="800.0" width="600.0" />
+                     </viewport>
+                     <image>
+                        <Image url="@popcornImage.jpg" />
+                     </image>
+                  </ImageView>     
+               </children>
+            </Pane>
+         </items>
+      </SplitPane>
    </children>
 </TilePane>

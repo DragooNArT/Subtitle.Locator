@@ -19,7 +19,7 @@ public class FileNameParser implements IFileNameParser {
 	Pattern sXXeXX_pattern = Pattern.compile("[Ss]\\d\\d[Ee]\\d\\d");
 	Pattern matchYear = Pattern.compile("\\d\\d\\d\\d");
 	Pattern dotSepPattern = Pattern.compile("\\d{1,}[.]\\d{1,}");
-
+	Pattern XXxXXPattern = Pattern.compile("\\d{1,}[x]\\d{1,}");
 	private static final String[] allForRemoval = new String[] { "XviD","HDTV", "HEVC", "UNRATED", "BluRay", "x265", "DTS-HD",
 			"X264", "WEB-DL", "H264", "DDC5", "AAC5", "DTS", "HDRip", "DD5", "BRRip" };
 
@@ -57,6 +57,10 @@ public class FileNameParser implements IFileNameParser {
 				result.put(SHOW_SEASON, entry.substring(0, 2));
 				result.put(SHOW_EPISODE, entry.substring(2,4));
 				patternIndex = i;
+			} else if(XXxXXPattern.matcher(entry).matches()) {
+				result.put(SHOW_SEASON, entry.substring(0, entry.indexOf('x')));
+				result.put(SHOW_EPISODE, entry.substring(entry.indexOf('x') + 1, entry.length()));
+				patternIndex = i;
 			}
 			
 
@@ -84,9 +88,9 @@ public class FileNameParser implements IFileNameParser {
 			split = new LinkedList<String>(Arrays.asList(origName.split("\\.")));
 			resolveRelease(split, result);
 		} else if (hashMatch > dotMatch && hashMatch > spaceMatch) {
-			split = new LinkedList<String>(Arrays.asList(origName.split("-")));
+			split = new LinkedList<String>(Arrays.asList(origName.split("-")).stream().map(e -> e.replaceAll(" ", "").trim()).collect(Collectors.toList()));
 		} else if (spaceMatch > dotMatch && spaceMatch > hashMatch) {
-			split = new LinkedList<String>(Arrays.asList(origName.split(" ")));
+			split = new LinkedList<String>(Arrays.asList(origName.split(" ")).stream().map(e -> e.replaceAll("-", "").trim()).collect(Collectors.toList()));
 		} else {
 			split = new LinkedList<String>();
 			split.add(origName);

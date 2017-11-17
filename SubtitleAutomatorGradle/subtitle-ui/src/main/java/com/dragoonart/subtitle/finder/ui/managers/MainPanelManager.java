@@ -26,6 +26,8 @@ import com.dragoonart.subtitle.finder.VideoState;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
+import com.dragoonart.subtitle.finder.onlineDB.MovieDataProvider;
+import com.dragoonart.subtitle.finder.onlineDB.VideoMetaBean;
 import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
@@ -38,6 +40,8 @@ import com.gluonhq.charm.glisten.control.ProgressIndicator;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import stormpot.BlazePool;
 import stormpot.Config;
 import stormpot.Pool;
@@ -300,21 +304,32 @@ public class MainPanelManager extends BaseManager {
 	public void loadVideoMeta(VideoEntry value) {
 		cleanVideoMeta();
 		ParsedFileName pfn = value.getParsedFilename();
-
+		panelCtrl.getSearchButton().setVisible(true);
+		panelCtrl.getMovieNameField().setVisible(true);
 		if (pfn.isEpisodic()) {
 			panelCtrl.getMovieNameField()
-					.setText("Show: " + pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
+					.setText(pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
 		} else {
-			panelCtrl.getMovieNameField().setText("Show: " + pfn.getShowName());
+			panelCtrl.getMovieNameField().setText(pfn.getShowName());
 		}
 		if (pfn.hasResolution()) {
+			panelCtrl.getResolutionField().setVisible(true);
 			panelCtrl.getResolutionField().setText("Resolution: " + pfn.getResolution());
 		}
 		if (pfn.hasYear()) {
+			panelCtrl.getYearField().setVisible(true);
 			panelCtrl.getYearField().setText("Year: " + pfn.getYear());
 		}
 		if (pfn.hasRelease()) {
+			panelCtrl.getReleaseField().setVisible(true);
 			panelCtrl.getReleaseField().setText("Release: " + pfn.getRelease());
+		}
+		VideoMetaBean vmb = MovieDataProvider.INSTANCE.getMovieData(value);
+		//TODO cache images as well!!
+		if(vmb != null) {
+			ImageView view = panelCtrl.getShowImage();
+			Image img = new Image(vmb.getPoster(),600,882,false,true);
+			panelCtrl.getShowImage().setImage(img);
 		}
 	}
 
