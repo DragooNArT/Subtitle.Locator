@@ -30,6 +30,7 @@ import com.dragoonart.subtitle.finder.onlineDB.MovieDataProvider;
 import com.dragoonart.subtitle.finder.onlineDB.VideoMetaBean;
 import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
+import com.dragoonart.subtitle.finder.ui.images.ImagesCache;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
 import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.dragoonart.subtitle.finder.web.SubtitleFinderAllocator;
@@ -123,14 +124,16 @@ public class MainPanelManager extends BaseManager {
 			SortedSet<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
 			// add only the new entries
 
-			
-			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
-			veSet.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e)).collect(Collectors.toCollection(LinkedHashSet::new)));
+			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e))
+					.collect(Collectors.toCollection(LinkedHashSet::new)));
+			veSet.addAll(subtitledVideos.stream().filter(e -> !veSet.contains(e))
+					.collect(Collectors.toCollection(LinkedHashSet::new)));
 
 			// leave only the entries which really have existing videos
-			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile())).collect(Collectors.toCollection(LinkedHashSet::new));
+			veSet = veSet.stream().filter(e -> Files.exists(e.getPathToFile()))
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
-			
+
 			updateVideosList(veSet, list);
 			for (VideoEntry entry : veSet) {
 				new Thread(() -> {
@@ -149,10 +152,10 @@ public class MainPanelManager extends BaseManager {
 
 					}
 
-//					// add entry to list if new
-//					if (!list.contains(entry)) {
-//						updateVideosList(entry, list);
-//					}
+					// // add entry to list if new
+					// if (!list.contains(entry)) {
+					// updateVideosList(entry, list);
+					// }
 
 				}).start();
 			}
@@ -185,8 +188,8 @@ public class MainPanelManager extends BaseManager {
 	private void updateVideosList(VideoEntry entry, ObservableList<VideoEntry> list) {
 		Platform.runLater(() -> {
 			list.add(entry);
-//			list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
-//			panelCtrl.getVideosList().setItems(list);
+			// list.sort((VideoEntry p1, VideoEntry p2) -> p1.compareTo(p2));
+			// panelCtrl.getVideosList().setItems(list);
 		});
 	}
 
@@ -199,9 +202,9 @@ public class MainPanelManager extends BaseManager {
 			panelCtrl.getVideosList().setItems(list);
 		});
 	}
-	
+
 	public void filterVideos(boolean showAll) {
-		
+
 		Platform.runLater(() -> {
 			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
 			list.clear();
@@ -211,6 +214,7 @@ public class MainPanelManager extends BaseManager {
 			panelCtrl.getVideosList().setItems(list);
 		});
 	}
+
 	private void addNotificationForVideo(VideoEntry entry) {
 		if (!StartUI.isUiVisible() && entry.hasSubtitles()) {
 			Platform.runLater(() -> StartUI.trayIcon.displayMessage(entry.getFileName(),
@@ -250,14 +254,7 @@ public class MainPanelManager extends BaseManager {
 				tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
 						: ve.hasSubtitles() ? "-fx-background-color: #ffff00;" : "-fx-background-color: #f9f7f7;");
 
-				SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-				tile.setPrefHeight(30);
-				String dateAdded = sdf.format(ve.getPathToFile().toFile().lastModified());
-				if (ve.getFileName().equals(ve.getAcceptableFileName())) {
-					tile.textProperty().add(ve.getFileName() + " " + dateAdded);
-				} else {
-					tile.textProperty().add(ve.getAcceptableFileName() + "/" + ve.getFileName() + " " + dateAdded);
-				}
+				tile.textProperty().add(ve.getAcceptableFileName());
 				if (ve.getState() == VideoState.LOADING) {
 					ProgressIndicator pInd = new ProgressIndicator();
 					pInd.setMaxHeight(30);
@@ -307,8 +304,7 @@ public class MainPanelManager extends BaseManager {
 		panelCtrl.getSearchButton().setVisible(true);
 		panelCtrl.getMovieNameField().setVisible(true);
 		if (pfn.isEpisodic()) {
-			panelCtrl.getMovieNameField()
-					.setText(pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
+			panelCtrl.getMovieNameField().setText(pfn.getShowName() + " S" + pfn.getSeason() + "E" + pfn.getEpisode());
 		} else {
 			panelCtrl.getMovieNameField().setText(pfn.getShowName());
 		}
@@ -325,11 +321,20 @@ public class MainPanelManager extends BaseManager {
 			panelCtrl.getReleaseField().setText("Release: " + pfn.getRelease());
 		}
 		VideoMetaBean vmb = MovieDataProvider.INSTANCE.getMovieData(value);
-		//TODO cache images as well!!
-		if(vmb != null) {
-			ImageView view = panelCtrl.getShowImage();
-			Image img = new Image(vmb.getPoster(),600,882,false,true);
-			panelCtrl.getShowImage().setImage(img);
+		loadMovieImage(vmb);
+	}
+
+	private void loadMovieImage(VideoMetaBean vmb) {
+		if (vmb != null) {
+			new Thread(() -> {
+				try {
+					final Image img = new Image(ImagesCache.INSTANCE.getLocalImagePath(vmb.getPoster()), 600, 882, false, true);
+					Platform.runLater(() -> panelCtrl.getShowImage().setImage(img));
+				} catch (Exception e) {
+					final Image img = new Image(vmb.getPoster(), 600, 882, false, true);
+					Platform.runLater(() -> panelCtrl.getShowImage().setImage(img));
+				}
+			}).start();
 		}
 	}
 

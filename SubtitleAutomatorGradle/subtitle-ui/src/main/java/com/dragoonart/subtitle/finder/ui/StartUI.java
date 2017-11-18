@@ -32,7 +32,7 @@ public class StartUI extends Application {
 		try {
 			Scene scene;
 			if (PreferencesManager.INSTANCE.hasLocations()) {
-				scene = new Scene(ResourceManager.getScene("MainPanel.fxml"), 853, 557);
+				scene = new Scene(ResourceManager.getScene("MainPanel.fxml"), 845, 557);
 			} else {
 				scene = new Scene(ResourceManager.getScene("ChooseLocation.fxml"), 640, 480);
 			}

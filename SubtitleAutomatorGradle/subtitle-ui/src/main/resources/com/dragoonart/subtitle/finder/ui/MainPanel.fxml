@@ -42,7 +42,7 @@
                   <CharmListView fx:id="subtitlesList" floatingHeaderVisible="false" layoutY="1.0" prefHeight="99.0" prefWidth="426.0" />
                </children>
             </Pane>
-            <Pane prefHeight="471.0" prefWidth="426.0">
+            <Pane prefHeight="471.0" prefWidth="430.0">
                <children>
                   <Text fx:id="movieName" disable="true" layoutX="102.0" layoutY="13.0" style="-fx-font-size: 20; -fx-font-family: arial;" textOrigin="CENTER" wrappingWidth="300.0000050663948" />
                   <Text fx:id="Year" disable="true" layoutX="15.0" layoutY="109.0" text="Година" visible="false" wrappingWidth="70.00000081211329" />

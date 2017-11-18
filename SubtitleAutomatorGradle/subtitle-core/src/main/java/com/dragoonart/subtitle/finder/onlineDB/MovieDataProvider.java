@@ -45,7 +45,7 @@ public enum MovieDataProvider {
 
 	public synchronized VideoMetaBean getMovieData(VideoEntry ve) {
 		VideoMetaBean vmb = checkCache(ve);
-		if(vmb != null) {
+		if (vmb != null) {
 			return vmb;
 		}
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
@@ -54,23 +54,39 @@ public enum MovieDataProvider {
 		if (ve.getParsedFilename().hasYear()) {
 			params.add(YEAR_PARAMETER, ve.getParsedFilename().getYear());
 		}
-	
+
 		WebResource builder = client.resource(PROVIDER_URL).queryParams(params);
-		
-		ClientResponse response = builder.get(ClientResponse.class);
+
+		ClientResponse response = null;
+
 		try {
+			response = builder.get(ClientResponse.class);
 			String json = response.getEntity(String.class);
-			if(json.contains("Movie not found!")) {
+			if (json.contains("Movie not found!")) {
 				vmb = VideoMetaBean.NOT_FOUND;
 			} else {
 				vmb = mapper.readValue(json, VideoMetaBean.class);
-				addToCache(ve,vmb);
+				addToCache(ve, vmb);
 			}
-			
+			return vmb;
 		} catch (Exception e) {
 			logger.warn("unable to load video metadata for: " + ve.getFileName(), e);
+
 		}
-		return vmb;
+		logHasError(response);
+		return null;
+	}
+
+	private void logHasError(ClientResponse response) {
+		if (response != null && response.getStatus() != 200) {
+			try {
+				logger.warn("unable to load video metadata from site, error code: " + response.getStatus() + "\n "
+						+ response.getEntity(String.class));
+			} catch (Exception e) {
+				logger.warn("unable to load video metadata from site and parse response, error code: "
+						+ response.getStatus());
+			}
+		}
 	}
 
 	private void addToCache(VideoEntry ve, VideoMetaBean vmb) {
@@ -78,18 +94,18 @@ public enum MovieDataProvider {
 		try {
 			mapper.writeValue(pathToCachedEntry.toFile(), vmb);
 		} catch (IOException e) {
-			logger.warn("Unable to save video meta for: "+ve.getAcceptableFileName()+" to cache", e);
+			logger.warn("Unable to save video meta for: " + ve.getAcceptableFileName() + " to cache", e);
 		}
-		
+
 	}
 
 	private VideoMetaBean checkCache(VideoEntry ve) {
 		Path pathToCachedEntry = FileLocations.MOVIE_META_DIRECTORY.resolve(ve.getAcceptableFileName());
-		if(Files.exists(pathToCachedEntry)) {
+		if (Files.exists(pathToCachedEntry)) {
 			try {
 				return mapper.readValue(pathToCachedEntry.toFile(), VideoMetaBean.class);
 			} catch (Exception e) {
-				logger.warn("Unable to load video meta for: "+ve.getAcceptableFileName()+" from cache", e);
+				logger.warn("Unable to load video meta for: " + ve.getAcceptableFileName() + " from cache", e);
 			}
 		}
 		return null;
