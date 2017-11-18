@@ -1,57 +1,32 @@
 package com.dragoonart.subtitle.finder.cache;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.dragoonart.subtitle.finder.FileLocations;
+import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CacheManager {
+	private static final Path VIDEO_ENTRIES_DIR = FileLocations.SETTINGS_DIRECTORY.resolve("videoEntries");
+	private ObjectMapper mapper = new ObjectMapper();
+	private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
 
-	private class LocationCache {
-
-		private String location;
-		private Set<VideoEntry> videoEntries;
-
-		public LocationCache(String location) {
-			this.location = location;
-			videoEntries = new HashSet<VideoEntry>();
-		}
-
-		public String getLocation() {
-			return location;
-		}
-
-		protected void addCacheEntry(VideoEntry entry) {
-			videoEntries.add(entry);
-		}
-
-		public VideoEntry getCacheEntry(Path videoLoc) {
-			return videoEntries.stream().filter(e -> e.getPathToFile().equals(videoLoc)).findFirst().orElse(null);
-		}
-
-		protected void removeCacheEntry() {
-			// TODO
-		}
-
-		@Override
-		public int hashCode() {
-			return location.hashCode();
-		}
-	}
-
-	public static final String GLOBAL_CACHE_DIR = "";
-
-	private Set<LocationCache> locCache = new HashSet<LocationCache>();
+	private Map<String, VideoEntry> locCache = new HashMap<String, VideoEntry>();
 	private static CacheManager instance;
 
-	static {
-		// Initialise
-		instance.getInsance();
-	}
-
-	public CacheManager() {
-		loadCache();
+	private CacheManager() {
 	}
 
 	public static synchronized CacheManager getInsance() {
@@ -61,49 +36,71 @@ public class CacheManager {
 		return instance;
 	}
 
-	private void loadCache() {
-		// TODO
+	private String getCacheDirFromBaseDir(Path baseDir) {
+		String cacheDir = baseDir.toAbsolutePath().toString();
+		cacheDir = cacheDir.replaceAll("/", "");
+		cacheDir = cacheDir.replaceAll("\\\\", "");
+		cacheDir = cacheDir.replaceAll("\\.", "");
+		cacheDir = cacheDir.replaceAll(":", "");
+		return cacheDir;
 	}
 
-	public boolean hasCacheEntry(Path location) {
-		return locCache.stream().filter(e -> e.getLocation().equals(location.toAbsolutePath().toString())).findFirst()
-				.isPresent();
-	}
+	public VideoEntry getCacheEntry(Path location, Path baseDir) {
+		if (!Files.exists(VIDEO_ENTRIES_DIR)) {
+			try {
+				Files.createDirectories(VIDEO_ENTRIES_DIR);
+			} catch (IOException e) {
+				logger.warn("unable to create dir '" + VIDEO_ENTRIES_DIR + "' for cache!", e);
+			}
+		} else if (Files.exists(VIDEO_ENTRIES_DIR.resolve(
+				location.getFileName().toString().substring(0, location.getFileName().toString().lastIndexOf("."))))) {
+			try {
+				String fileName = location.getFileName().toString().substring(0,
+						location.getFileName().toString().lastIndexOf("."));
 
-	public VideoEntry getCachedEntry(Path location) {
-		for (LocationCache lc : locCache) {
-			VideoEntry ve = lc.getCacheEntry(location);
-			if (ve != null)
+				VideoEntry ve = locCache.containsKey(fileName) ? locCache.get(fileName)
+						: mapper.readValue(VIDEO_ENTRIES_DIR.resolve(fileName).toFile(), VideoEntry.class);
+
+				validateAndUpdateCacheEntry(fileName, ve, location);
+				if (!locCache.containsKey(fileName)) {
+					locCache.put(fileName, ve);
+				}
 				return ve;
+			} catch (IOException e) {
+				logger.warn("unable to load cache entry for '" + location + "' for cache!", e);
+			}
 		}
 		return null;
 	}
 
-	private LocationCache getCacheEntry(String location) {
-		return locCache.stream().filter(e -> e.getLocation().equals(location)).findFirst().orElse(null);
-	}
-
-	private LocationCache getCacheEntry(Path location) {
-		return getCacheEntry(location.toAbsolutePath().toString());
-	}
-
-	private void createAndStoreNewEntry(VideoEntry entry) {
-		LocationCache locEntry = new LocationCache(entry.getRootDir().toAbsolutePath().toString());
-		locEntry.addCacheEntry(entry);
-		locCache.add(locEntry);
+	private void validateAndUpdateCacheEntry(String fileName, VideoEntry entry, Path location) {
+		Set<SubtitleArchiveEntry> verifiedEntries = entry.getSubtitleArchives() != null ? entry.getSubtitleArchives().stream()
+				.filter(e -> Files.exists(e.getPathToSubtitle())).collect(Collectors.toSet()) : null;
+		boolean shouldUpdate = false;
+		if(entry.getSubtitleArchives() != null && verifiedEntries.size() != entry.getSubtitleArchives().size()) {
+			entry.setSubtitleArchives(verifiedEntries);
+			shouldUpdate = true;
+		}
+		//if needed update the entry in the file storage
+		if(shouldUpdate) {
+			addCacheEntry(entry);
+			locCache.put(fileName, entry);
+		}
+		//set the current entry's path before returning it.
+		if(!entry.getPathToFile().equals(location)) {
+			entry.setPathToFile(location);
+		}
 	}
 
 	public boolean addCacheEntry(VideoEntry entry) {
-		if (entry != null && entry.getRootDir() != null) {
-			if (hasCacheEntry(entry.getRootDir())) {
-				getCacheEntry(entry.getRootDir()).addCacheEntry(entry);
-			} else {
-				createAndStoreNewEntry(entry);
+		if (entry != null) {
+			try {
+				mapper.writeValue(VIDEO_ENTRIES_DIR.resolve(entry.getFileName()).toFile(), entry);
+				locCache.put(entry.getFileName(), entry);
+				return true;
+			} catch (Exception e) {
+				logger.warn("unable to add '" + entry + "' to cache!", e);
 			}
-
-			// TODO Maybe tell the Location to store now. This can be a trigger for
-			// re-assigning
-			return true;
 		}
 		return false;
 	}

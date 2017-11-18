@@ -42,16 +42,16 @@ public abstract class AbstractSubtitleService {
 	 * @return - list of subtitle archive objects
 	 */
 	public Set<SubtitleArchiveEntry> getSubtitles(VideoEntry ve) {
-		String searchWord = getSearchKeyword(ve.getParsedFilename());
+		String searchWord = getSearchKeyword(ve.getParsedFileName());
 		logger.trace("Looking for \"" + searchWord + "\" in site: " + getServiceProvider().getBaseUrl());
 		WebResource.Builder builder = client.resource(getServiceProvider().getSearchUrl()).getRequestBuilder();
 		ClientResponse resp = null;
 		try {
 		resp = builder
-				.entity(getFormData(ve.getParsedFilename(), builder), MediaType.APPLICATION_FORM_URLENCODED)
+				.entity(getFormData(ve.getParsedFileName(), builder), MediaType.APPLICATION_FORM_URLENCODED)
 				.post(ClientResponse.class);
 		return getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)),
-				ve.getParsedFilename());
+				ve.getParsedFileName());
 		} catch (Exception e) {
 			logger.error("Failed to get subtitle archives from: "+getServiceProvider().getBaseUrl()+" for video: "+ve.getFileName(), e);
 		} finally {

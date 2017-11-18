@@ -6,29 +6,30 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.dragoonart.subtitle.finder.VideoState;
+import com.dragoonart.subtitle.finder.onlineDB.VideoMetaBean;
 import com.dragoonart.subtitle.finder.parsers.impl.FileNameParser;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class VideoEntry implements Comparable<VideoEntry> {
 
-	private final Path pathToFile;
+	private Path pathToFile;
 
-	private final Path rootDir;
-
-	private Set<SubtitleArchiveEntry> subtitles;
+	private Set<SubtitleArchiveEntry> subtitleArchives;
 
 	private String acceptableFileName = null;
 
-	private ParsedFileName pfn;
+	private ParsedFileName parsedFileName;
 	
 	private VideoState state;
 	
-	public VideoEntry(Path pathToFile, Path rootDir,VideoState initialState) {
-		this.pathToFile = pathToFile;
-		this.rootDir = rootDir;
-		this.state = initialState;
-		pfn = new ParsedFileName(getAcceptableFileName());
+	//constructor for JSON
+	public VideoEntry() {
 	}
-
+	public VideoEntry(Path pathToFile, VideoState initialState) {
+		this.pathToFile = pathToFile;
+		this.state = initialState;
+	}
+	@JsonIgnore
 	public String getAcceptableFileName() {
 		resolveBestFileName();
 		return acceptableFileName;
@@ -53,17 +54,16 @@ public class VideoEntry implements Comparable<VideoEntry> {
 			}
 		}
 	}
-
+	
 	public Path getPathToFile() {
 		return pathToFile;
 	}
 
-	public Path getRootDir() {
-		return rootDir;
-	}
-
-	public ParsedFileName getParsedFilename() {
-		return pfn;
+	public ParsedFileName getParsedFileName() {
+		if(parsedFileName == null) {
+			parsedFileName = new ParsedFileName(getAcceptableFileName());
+		}
+		return parsedFileName;
 	}
 
 	@Override
@@ -92,31 +92,31 @@ public class VideoEntry implements Comparable<VideoEntry> {
 	}
 
 	public Set<SubtitleArchiveEntry> getSubtitleArchives() {
-		return subtitles;
+		return subtitleArchives;
 	}
 
-	public void setSubtitles(Set<SubtitleArchiveEntry> subtitles) {
-		this.subtitles = subtitles;
+	public void setSubtitleArchives(Set<SubtitleArchiveEntry> subtitles) {
+		this.subtitleArchives = subtitles;
 	}
 
 	public void addSubtitles(Set<SubtitleArchiveEntry> subtitles) {
-		if (this.subtitles == null) {
-			this.subtitles = new HashSet<SubtitleArchiveEntry>();
+		if (this.subtitleArchives == null) {
+			this.subtitleArchives = new HashSet<SubtitleArchiveEntry>();
 		}
 		for(SubtitleArchiveEntry sE : subtitles) {
-			if(this.subtitles.contains(sE)) {
-				this.subtitles.remove(sE);
+			if(this.subtitleArchives.contains(sE)) {
+				this.subtitleArchives.remove(sE);
 				
 			} 
-			this.subtitles.add(sE);
+			this.subtitleArchives.add(sE);
 		}
 	}
 
 	public boolean hasSubtitles() {
-		return subtitles != null && !subtitles.isEmpty();
+		return subtitleArchives != null && !subtitleArchives.isEmpty();
 	}
 
-
+	@JsonIgnore
 	public String getFileName() {
 		return pathToFile.getFileName().toString().substring(0, pathToFile.getFileName().toString().lastIndexOf("."));
 	}
@@ -124,7 +124,7 @@ public class VideoEntry implements Comparable<VideoEntry> {
 	@Override
 	public String toString() {
 		return new StringBuilder().append("Original file name: ").append(getFileName()).append("\n")
-				.append(getParsedFilename().toString()).append("\n").append(new Date(pathToFile.toFile().lastModified()).toString()).toString();
+				.append(getParsedFileName().toString()).append("\n").append(new Date(pathToFile.toFile().lastModified()).toString()).toString();
 	}
 	
 	@Override
@@ -136,5 +136,10 @@ public class VideoEntry implements Comparable<VideoEntry> {
 		}
 		return -1;
 
+	}
+
+	public void setPathToFile(Path location) {
+		this.pathToFile = location;
+		acceptableFileName = null;
 	}
 }

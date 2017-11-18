@@ -65,7 +65,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 	}
 
 	private boolean areSuitableSubtitles(VideoEntry ve, Entry<String, Path> entry) {
-		String release = ve.getParsedFilename().getRelease();
+		String release = ve.getParsedFileName().getRelease();
 		if (release != null) {
 			ParsedFileName pfn = null;
 			try {
@@ -194,16 +194,18 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 
 		if (acceptFile(file)) {
-			VideoEntry vfb = CacheManager.getInsance().getCachedEntry(file);
-
-			if (SubtitleFileUtils.hasSubs(file)) {
-				vfb = new VideoEntry(file, rootFolder, VideoState.FINISHED);
+			VideoEntry vfb = CacheManager.getInsance().getCacheEntry(file, rootFolder);
+			if(vfb == null) {
+				vfb = new VideoEntry(file, SubtitleFileUtils.hasSubs(file) ?  VideoState.FINISHED : VideoState.PENDING);
+				CacheManager.getInsance().addCacheEntry(vfb);
+			}
+			
+			if(SubtitleFileUtils.hasSubs(file)) {
 				subtitledVideos.add(vfb);
 			} else {
-				vfb = new VideoEntry(file, rootFolder, VideoState.PENDING);
 				subtitlessVideos.add(vfb);
 			}
-			CacheManager.getInsance().addCacheEntry(vfb);
+			
 		}
 		return super.visitFile(file, attrs);
 	}

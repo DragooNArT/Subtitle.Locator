@@ -50,9 +50,9 @@ public enum MovieDataProvider {
 		}
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
 		params.add(API_KEY_PARAMETER, API_KEY_VALUE);
-		params.add(TITLE_PARAMETER, ve.getParsedFilename().getShowName());
-		if (ve.getParsedFilename().hasYear()) {
-			params.add(YEAR_PARAMETER, ve.getParsedFilename().getYear());
+		params.add(TITLE_PARAMETER, ve.getParsedFileName().getShowName());
+		if (ve.getParsedFileName().hasYear()) {
+			params.add(YEAR_PARAMETER, ve.getParsedFileName().getYear());
 		}
 
 		WebResource builder = client.resource(PROVIDER_URL).queryParams(params);

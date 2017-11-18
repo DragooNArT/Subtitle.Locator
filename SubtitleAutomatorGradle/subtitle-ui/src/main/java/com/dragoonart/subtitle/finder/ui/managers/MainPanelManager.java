@@ -26,6 +26,7 @@ import com.dragoonart.subtitle.finder.VideoState;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
+import com.dragoonart.subtitle.finder.cache.CacheManager;
 import com.dragoonart.subtitle.finder.onlineDB.MovieDataProvider;
 import com.dragoonart.subtitle.finder.onlineDB.VideoMetaBean;
 import com.dragoonart.subtitle.finder.ui.StartUI;
@@ -137,7 +138,6 @@ public class MainPanelManager extends BaseManager {
 			updateVideosList(veSet, list);
 			for (VideoEntry entry : veSet) {
 				new Thread(() -> {
-
 					// look for subs if neccessary
 					if (entry.getState() == VideoState.PENDING) {
 						loadSubsForVideo(entry);
@@ -167,7 +167,7 @@ public class MainPanelManager extends BaseManager {
 			Set<SubtitleArchiveEntry> result = new HashSet<>();
 
 			try {
-				Files.list(SubtitleFileUtils.getArchivesDir(entry.getParsedFilename())).forEach(e -> {
+				Files.list(SubtitleFileUtils.getArchivesDir(entry.getParsedFileName())).forEach(e -> {
 					if (isArchive(e)) {
 						SubtitleArchiveEntry archEntry = new SubtitleArchiveEntry(e);
 						result.add(archEntry);
@@ -300,7 +300,7 @@ public class MainPanelManager extends BaseManager {
 
 	public void loadVideoMeta(VideoEntry value) {
 		cleanVideoMeta();
-		ParsedFileName pfn = value.getParsedFilename();
+		ParsedFileName pfn = value.getParsedFileName();
 		panelCtrl.getSearchButton().setVisible(true);
 		panelCtrl.getMovieNameField().setVisible(true);
 		if (pfn.isEpisodic()) {
@@ -348,7 +348,13 @@ public class MainPanelManager extends BaseManager {
 			if (finder != null) {
 				entry.setState(VideoState.LOADING);
 				Platform.runLater(() -> getController().getVideosList().refresh());
+				int subsNow = entry.getSubtitleArchives() != null ? entry.getSubtitleArchives().size() : 0;
+				
 				finder.lookupEverywhere(entry);
+				int subsAfter = entry.getSubtitleArchives() != null ? entry.getSubtitleArchives().size() : 0;
+				if(subsNow != subsAfter) {
+					CacheManager.getInsance().addCacheEntry(entry);
+				}
 				entry.setState(VideoState.FINISHED);
 				Platform.runLater(() -> getController().getVideosList().refresh());
 			} else {

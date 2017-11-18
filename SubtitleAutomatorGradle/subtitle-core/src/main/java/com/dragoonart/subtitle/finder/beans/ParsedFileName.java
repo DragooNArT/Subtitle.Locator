@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dragoonart.subtitle.finder.parsers.IFileNameParser;
 import com.dragoonart.subtitle.finder.parsers.impl.ParserFactory;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ParsedFileName {
 	
@@ -16,7 +17,10 @@ public class ParsedFileName {
 	private String origName;
 	private Map<String, String> parsedAttributes = new HashMap<String, String>();
 	private IFileNameParser nameParser;
-
+	//constructor for JSON
+	public ParsedFileName() {
+		nameParser = ParserFactory.getFileNameParser();
+	}
 	public ParsedFileName(String origName) {
 		this.origName = origName;
 		nameParser = ParserFactory.getFileNameParser();
@@ -29,7 +33,7 @@ public class ParsedFileName {
 	public int getVersion() {
 		return version;
 	}
-
+	@JsonIgnore
 	public String getShowName() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_NAME);
 	}
@@ -37,19 +41,19 @@ public class ParsedFileName {
 	public boolean hasShowName() {
 		return getShowName() != null;
 	}
-
+	@JsonIgnore
 	public String getSeason() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_SEASON);
 	}
-
+	@JsonIgnore
 	public boolean isEpisodic() {
 		return getSeason() != null;
 	}
-
+	@JsonIgnore
 	public String getEpisode() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_EPISODE);
 	}
-
+	@JsonIgnore
 	public String getRelease() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_RELEASE);
 	}
@@ -57,7 +61,7 @@ public class ParsedFileName {
 	public boolean hasRelease() {
 		return getRelease() != null;
 	}
-
+	@JsonIgnore
 	public String getYear() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_YEAR);
 	}
@@ -65,20 +69,24 @@ public class ParsedFileName {
 	public boolean hasYear() {
 		return getYear() != null;
 	}
-
+	@JsonIgnore
 	public String getResolution() {
 		return getParsedAttributes().get(IFileNameParser.SHOW_RESOLUTION);
 	}
-
+	
 	public boolean hasResolution() {
 		return getResolution() != null;
 	}
-
+	
 	public Map<String, String> getParsedAttributes() {
 		load();
 		return parsedAttributes;
 	}
-
+	
+	public void setParsedAttributes(Map<String, String> parsedAttrs) {
+		parsedAttributes = parsedAttrs;
+	}
+	
 	private void load() {
 		if (nameParser.getVersion() > version) {
 			parsedAttributes.clear();

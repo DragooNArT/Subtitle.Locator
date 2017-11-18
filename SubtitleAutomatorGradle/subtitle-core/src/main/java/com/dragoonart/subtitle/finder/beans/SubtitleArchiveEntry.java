@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.dragoonart.subtitle.finder.SubtitleFileUtils;
 import com.dragoonart.subtitle.finder.web.SubtitleProvider;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class SubtitleArchiveEntry {
 
@@ -16,7 +17,12 @@ public class SubtitleArchiveEntry {
 
 	private SubtitleProvider source;
 	private Map<String, Path> subtitleEntries = new HashMap<String, Path>();
-
+	
+	public SubtitleArchiveEntry() {
+		// For JSON serialization
+	}
+	
+	
 	public SubtitleArchiveEntry(SubtitleProvider source, String link, Path pathToArchive) {
 		this.pathToSubtitle = pathToArchive;
 		this.link = link;
@@ -34,7 +40,11 @@ public class SubtitleArchiveEntry {
 	public SubtitleProvider getProvider() {
 		return source;
 	}
-
+	
+	public void setProvider(SubtitleProvider source) {
+		this.source = source;
+	}
+	
 	public void setLink(String link) {
 		this.link = link;
 	}
@@ -42,7 +52,11 @@ public class SubtitleArchiveEntry {
 	public void setSource(SubtitleProvider source) {
 		this.source = source;
 	}
-
+	
+	public Path getPathToSubtitle() {
+		return pathToSubtitle;
+	}
+	
 	public Map<String, Path> getSubtitleEntries() {
 		if (subtitleEntries.isEmpty() && Files.exists(pathToSubtitle)) {
 			try {
@@ -54,7 +68,11 @@ public class SubtitleArchiveEntry {
 		}
 		return subtitleEntries;
 	}
-
+	
+	public void setSubtitleEntries(Map<String, Path> subtitleEntries) {
+		this.subtitleEntries = subtitleEntries;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -79,7 +97,8 @@ public class SubtitleArchiveEntry {
 			return false;
 		return true;
 	}
-
+	
+	@JsonIgnore
 	public String getSubtitleArchiveName() {
 		return pathToSubtitle.getFileName().toString();
 	}
