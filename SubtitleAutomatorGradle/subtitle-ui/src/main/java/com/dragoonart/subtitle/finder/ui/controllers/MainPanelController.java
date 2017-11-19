@@ -139,7 +139,6 @@ public class MainPanelController {
 			new Thread(() -> manager.loadSubsForVideo(videosList.getSelectedItem())).start();
 		}
 	}
-	   
 	@FXML
 	void initialize() {
 		

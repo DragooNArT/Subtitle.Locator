@@ -18,20 +18,20 @@ import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CacheManager {
+public class VideoEntryCache {
 	private static final Path VIDEO_ENTRIES_DIR = FileLocations.SETTINGS_DIRECTORY.resolve("videoEntries");
 	private ObjectMapper mapper = new ObjectMapper();
-	private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
+	private static final Logger logger = LoggerFactory.getLogger(VideoEntryCache.class);
 
 	private Map<String, VideoEntry> locCache = new HashMap<String, VideoEntry>();
-	private static CacheManager instance;
+	private static VideoEntryCache instance;
 
-	private CacheManager() {
+	private VideoEntryCache() {
 	}
 
-	public static synchronized CacheManager getInsance() {
+	public static synchronized VideoEntryCache getInsance() {
 		if (instance == null) {
-			instance = new CacheManager();
+			instance = new VideoEntryCache();
 		}
 		return instance;
 	}
@@ -81,6 +81,7 @@ public class CacheManager {
 			entry.setSubtitleArchives(verifiedEntries);
 			shouldUpdate = true;
 		}
+		//TODO verify actual subtitles exist and haven't been deleted, and re-extract if neccessary
 		//if needed update the entry in the file storage
 		if(shouldUpdate) {
 			addCacheEntry(entry);

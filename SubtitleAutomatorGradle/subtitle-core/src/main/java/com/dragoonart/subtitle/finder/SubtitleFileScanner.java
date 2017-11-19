@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
-import com.dragoonart.subtitle.finder.cache.CacheManager;
+import com.dragoonart.subtitle.finder.cache.VideoEntryCache;
 
 public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 
@@ -31,12 +31,12 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 
 	public SubtitleFileScanner(String path) {
 		rootFolder = Paths.get(path);
-		CacheManager.getInsance();
+		VideoEntryCache.getInsance();
 	}
 
 	public SubtitleFileScanner(Path path) {
 		rootFolder = path;
-		CacheManager.getInsance();
+		VideoEntryCache.getInsance();
 	}
 
 	public SortedSet<VideoEntry> getFolderVideos() {
@@ -194,10 +194,9 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 
 		if (acceptFile(file)) {
-			VideoEntry vfb = CacheManager.getInsance().getCacheEntry(file, rootFolder);
+			VideoEntry vfb = VideoEntryCache.getInsance().getCacheEntry(file, rootFolder);
 			if(vfb == null) {
 				vfb = new VideoEntry(file, SubtitleFileUtils.hasSubs(file) ?  VideoState.FINISHED : VideoState.PENDING);
-				CacheManager.getInsance().addCacheEntry(vfb);
 			}
 			
 			if(SubtitleFileUtils.hasSubs(file)) {

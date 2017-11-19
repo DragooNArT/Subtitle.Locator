@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.dragoonart.subtitle.finder.VideoState;
-import com.dragoonart.subtitle.finder.onlineDB.VideoMetaBean;
+import com.dragoonart.subtitle.finder.beans.videometa.VideoMetaBean;
 import com.dragoonart.subtitle.finder.parsers.impl.FileNameParser;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

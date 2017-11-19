@@ -26,12 +26,12 @@ import com.dragoonart.subtitle.finder.VideoState;
 import com.dragoonart.subtitle.finder.beans.ParsedFileName;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
-import com.dragoonart.subtitle.finder.cache.CacheManager;
-import com.dragoonart.subtitle.finder.onlineDB.MovieDataProvider;
-import com.dragoonart.subtitle.finder.onlineDB.VideoMetaBean;
+import com.dragoonart.subtitle.finder.beans.videometa.VideoMetaBean;
+import com.dragoonart.subtitle.finder.cache.VideoMetaCachedProvider;
+import com.dragoonart.subtitle.finder.cache.VideoPosterCachedProvider;
+import com.dragoonart.subtitle.finder.cache.VideoEntryCache;
 import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
-import com.dragoonart.subtitle.finder.ui.images.ImagesCache;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
 import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.dragoonart.subtitle.finder.web.SubtitleFinderAllocator;
@@ -238,7 +238,7 @@ public class MainPanelManager extends BaseManager {
 
 		}
 	}
-
+	private ProgressIndicator pInd = new ProgressIndicator();
 	public void initVideosListCell() {
 		panelCtrl.getVideosList().setCellFactory(p -> new CharmListCell<VideoEntry>() {
 
@@ -256,8 +256,6 @@ public class MainPanelManager extends BaseManager {
 
 				tile.textProperty().add(ve.getAcceptableFileName());
 				if (ve.getState() == VideoState.LOADING) {
-					ProgressIndicator pInd = new ProgressIndicator();
-					pInd.setMaxHeight(30);
 					tile.setSecondaryGraphic(pInd);
 				}
 				// final Image image = USStates.getImage(item.getFlag());
@@ -320,21 +318,24 @@ public class MainPanelManager extends BaseManager {
 			panelCtrl.getReleaseField().setVisible(true);
 			panelCtrl.getReleaseField().setText("Release: " + pfn.getRelease());
 		}
-		VideoMetaBean vmb = MovieDataProvider.INSTANCE.getMovieData(value);
+		VideoMetaBean vmb = VideoMetaCachedProvider.INSTANCE.getMovieData(value);
 		loadMovieImage(vmb);
 	}
 
 	private void loadMovieImage(VideoMetaBean vmb) {
-		if (vmb != null) {
+		if (vmb != null && vmb != VideoMetaBean.NOT_FOUND) {
 			new Thread(() -> {
 				try {
-					final Image img = new Image(ImagesCache.INSTANCE.getLocalImagePath(vmb.getPoster()), 600, 882, false, true);
+					final Image img = new Image(VideoPosterCachedProvider.INSTANCE.getLocalImagePath(vmb.getPoster()), 600, 882, false, true);
 					Platform.runLater(() -> panelCtrl.getShowImage().setImage(img));
 				} catch (Exception e) {
 					final Image img = new Image(vmb.getPoster(), 600, 882, false, true);
 					Platform.runLater(() -> panelCtrl.getShowImage().setImage(img));
 				}
 			}).start();
+		} else {
+			final Image img = new Image(getClass().getResourceAsStream("../popcornImage.jpg"), 600, 882, false, true);
+			Platform.runLater(() -> panelCtrl.getShowImage().setImage(img));
 		}
 	}
 
@@ -352,11 +353,15 @@ public class MainPanelManager extends BaseManager {
 				
 				finder.lookupEverywhere(entry);
 				int subsAfter = entry.getSubtitleArchives() != null ? entry.getSubtitleArchives().size() : 0;
-				if(subsNow != subsAfter) {
-					CacheManager.getInsance().addCacheEntry(entry);
-				}
 				entry.setState(VideoState.FINISHED);
-				Platform.runLater(() -> getController().getVideosList().refresh());
+				if(subsNow != subsAfter) {
+					VideoEntryCache.getInsance().addCacheEntry(entry);
+				}
+				
+				Platform.runLater(() -> {
+					getController().getVideosList().refresh();
+					loadSubtitles(entry.getSubtitleArchives());
+				});
 			} else {
 				logger.warn("Timed out waiting for SubtitleFinder object " + entry.toString());
 			}

@@ -1,5 +1,5 @@
 
-package com.dragoonart.subtitle.finder.onlineDB;
+package com.dragoonart.subtitle.finder.beans.videometa;
 
 import java.util.HashMap;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.dragoonart.subtitle.finder.ui.images;
+package com.dragoonart.subtitle.finder.cache;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,9 +12,9 @@ import com.dragoonart.subtitle.finder.FileLocations;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public enum ImagesCache {
+public enum VideoPosterCachedProvider {
 	INSTANCE();
-	private static final Logger logger = LoggerFactory.getLogger(ImagesCache.class);
+	private static final Logger logger = LoggerFactory.getLogger(VideoPosterCachedProvider.class);
 	public static final Path IMAGES_STORAGE_PATH = FileLocations.SETTINGS_DIRECTORY.resolve("movieImgs");
 	private Client client = null;
 

@@ -1,4 +1,4 @@
-package com.dragoonart.subtitle.finder.onlineDB;
+package com.dragoonart.subtitle.finder.cache;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,13 +11,14 @@ import org.slf4j.LoggerFactory;
 
 import com.dragoonart.subtitle.finder.FileLocations;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
+import com.dragoonart.subtitle.finder.beans.videometa.VideoMetaBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
-public enum MovieDataProvider {
+public enum VideoMetaCachedProvider {
 	INSTANCE();
 	private static final String PROVIDER_URL = "http://www.omdbapi.com";
 	private static final String TITLE_PARAMETER = "t";
@@ -26,13 +27,13 @@ public enum MovieDataProvider {
 
 	private static final String API_KEY_VALUE = "595c66dd";
 
-	private static final Logger logger = LoggerFactory.getLogger(MovieDataProvider.class);
+	private static final Logger logger = LoggerFactory.getLogger(VideoMetaCachedProvider.class);
 
 	private ObjectMapper mapper = new ObjectMapper();
 
 	private Client client = Client.create();
 
-	private MovieDataProvider() {
+	private VideoMetaCachedProvider() {
 		if (!Files.exists(FileLocations.MOVIE_META_DIRECTORY)) {
 			try {
 				Files.createDirectories(FileLocations.MOVIE_META_DIRECTORY);
