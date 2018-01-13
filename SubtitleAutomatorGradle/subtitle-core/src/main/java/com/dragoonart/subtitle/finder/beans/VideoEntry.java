@@ -96,6 +96,9 @@ public class VideoEntry implements Comparable<VideoEntry> {
 	}
 
 	public Set<SubtitleArchiveEntry> getSubtitleArchives() {
+		if (this.subtitleArchives == null) {
+			this.subtitleArchives = new HashSet<SubtitleArchiveEntry>();
+		}
 		return subtitleArchives;
 	}
 

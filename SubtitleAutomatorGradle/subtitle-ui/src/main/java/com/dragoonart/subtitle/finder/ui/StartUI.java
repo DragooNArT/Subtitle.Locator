@@ -115,7 +115,7 @@ public class StartUI extends Application {
 				@Override
 				public void mouseClicked(MouseEvent e) {
 					if(e.getClickCount() == 2) {
-						stage.show();
+						Platform.runLater(() -> stage.show());
 					}
 					
 				}

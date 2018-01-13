@@ -133,7 +133,7 @@ public class SubtitleFileScanner extends SimpleFileVisitor<Path> {
 	}
 
 	private boolean applyIfSingleSubFound(VideoEntry ve) {
-		if (ve.getSubtitleArchives().size() == 1) {
+		if (ve.hasSubtitles() && ve.getSubtitleArchives().size() == 1) {
 			Map<String, Path> subtitleEntries = ve.getSubtitleArchives().iterator().next().getSubtitleEntries();
 			if (subtitleEntries.size() == 1) {
 				Path newFilePath = ve.getPathToFile().getParent().resolve(ve.getFileName().concat(".srt"));
