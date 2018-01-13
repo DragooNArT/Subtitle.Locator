@@ -51,7 +51,7 @@ public enum VideoMetaCachedProvider {
 		}
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
 		params.add(API_KEY_PARAMETER, API_KEY_VALUE);
-		params.add(TITLE_PARAMETER, ve.getParsedFileName().getShowName());
+		params.add("s", ve.getParsedFileName().getShowName());
 		if (ve.getParsedFileName().hasYear()) {
 			params.add(YEAR_PARAMETER, ve.getParsedFileName().getYear());
 		}

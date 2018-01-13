@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dragoonart.subtitle.finder.FileLocations;
+import com.dragoonart.subtitle.finder.SubtitleFileUtils;
 import com.dragoonart.subtitle.finder.beans.SubtitleArchiveEntry;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +82,17 @@ public class VideoEntryCache {
 			entry.setSubtitleArchives(verifiedEntries);
 			shouldUpdate = true;
 		}
+		for(SubtitleArchiveEntry sve : verifiedEntries) {
+			Set<Path> existingSubs = sve.getSubtitleEntries().values().stream().filter(e -> Files.exists(e)).collect(Collectors.toSet());
+			if(existingSubs.size() != sve.getSubtitleEntries().size()) {
+				SubtitleFileUtils.unpackSubs(sve.getPathToSubtitle(), sve.getPathToSubtitle().getParent().getParent());
+				existingSubs = sve.getSubtitleEntries().values().stream().filter(e -> Files.exists(e)).collect(Collectors.toSet());
+				if(existingSubs.size() != sve.getSubtitleEntries().size()) {
+					logger.warn("archive '"+sve.getSubtitleArchiveName()+ "' contains "+sve.getSubtitleEntries().size()+", but only "+existingSubs.size()+" can be extracted");
+					shouldUpdate = true;
+				}
+			}
+		}
 		//TODO verify actual subtitles exist and haven't been deleted, and re-extract if neccessary
 		//if needed update the entry in the file storage
 		if(shouldUpdate) {
@@ -94,7 +106,7 @@ public class VideoEntryCache {
 	}
 
 	public boolean addCacheEntry(VideoEntry entry) {
-		if (entry != null) {
+		if (entry != null && !locCache.containsKey(entry.getFileName())) {
 			try {
 				mapper.writeValue(VIDEO_ENTRIES_DIR.resolve(entry.getFileName()).toFile(), entry);
 				locCache.put(entry.getFileName(), entry);

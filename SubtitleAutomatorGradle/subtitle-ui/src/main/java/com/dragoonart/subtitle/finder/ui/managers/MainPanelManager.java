@@ -32,6 +32,7 @@ import com.dragoonart.subtitle.finder.cache.VideoPosterCachedProvider;
 import com.dragoonart.subtitle.finder.cache.VideoEntryCache;
 import com.dragoonart.subtitle.finder.ui.StartUI;
 import com.dragoonart.subtitle.finder.ui.controllers.MainPanelController;
+import com.dragoonart.subtitle.finder.ui.factories.FolderSearchThreadFactory;
 import com.dragoonart.subtitle.finder.ui.usersettings.PreferencesManager;
 import com.dragoonart.subtitle.finder.web.SubtitleFinder;
 import com.dragoonart.subtitle.finder.web.SubtitleFinderAllocator;
@@ -42,8 +43,11 @@ import com.gluonhq.charm.glisten.control.ProgressIndicator;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.util.Callback;
 import stormpot.BlazePool;
 import stormpot.Config;
 import stormpot.Pool;
@@ -74,14 +78,18 @@ public class MainPanelManager extends BaseManager {
 		for (SubtitleArchiveEntry archE : subtitles) {
 			result.addAll(archE.getSubtitleEntries().values());
 		}
+
 		panelCtrl.getSubtitlesList().setItems(FXCollections.observableArrayList(result));
+		panelCtrl.getSubtitlesList().refresh();
+//		initSubtitlesListCell();
 	}
 
 	public Path getSelectedVideo() {
-		return panelCtrl.getVideosList().getSelectedItem().getPathToFile();
+		return panelCtrl.getVideosList().getSelectionModel().getSelectedItem().getPathToFile();
 	}
 
 	private void setRootFolder(Path toFolder) {
+		searchThreadFactory.setFolder(toFolder.toString());
 		if (subFscanner == null) {
 			subFscanner = new SubtitleFileScanner(toFolder);
 		} else {
@@ -103,26 +111,41 @@ public class MainPanelManager extends BaseManager {
 		}
 	}
 
-	private ScheduledThreadPoolExecutor stpex = new ScheduledThreadPoolExecutor(1);
+	private FolderSearchThreadFactory searchThreadFactory = new FolderSearchThreadFactory();
+	private ScheduledThreadPoolExecutor stpex = new ScheduledThreadPoolExecutor(1, searchThreadFactory);
+
 	private Set<VideoEntry> veSet = new LinkedHashSet<VideoEntry>();
 
 	public void loadFolderVideos(Path toFolder) {
 		// reset videos
 		veSet.clear();
 		setRootFolder(toFolder);
-		stpex.scheduleAtFixedRate(() -> {
-			try {
-				scanFolderForVideos();
-			} catch (Exception e) {
-				logger.error("Main scanning exec failed!!!: ", e);
+		stpex.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					logger.info("scanning folder: " + toFolder);
+					scanFolderForVideos();
+				} catch (Exception e) {
+					logger.error("Main scanning exec failed!!!: ", e);
+				}
+
+			}
+
+			@Override
+			public String toString() {
+				return toFolder.toString();
 			}
 		}, 0, 60, TimeUnit.SECONDS);
 	}
 
+	private SortedSet<VideoEntry> subtitlessVideos;
+	private SortedSet<VideoEntry> subtitledVideos;
+
 	private void scanFolderForVideos() {
 		synchronized (veSet) {
-			SortedSet<VideoEntry> subtitlessVideos = subFscanner.getFolderVideos();
-			SortedSet<VideoEntry> subtitledVideos = subFscanner.getFolderSubtitledVideos();
+			subtitlessVideos = subFscanner.getFolderVideos();
+			subtitledVideos = subFscanner.getFolderSubtitledVideos();
 			// add only the new entries
 
 			veSet.addAll(subtitlessVideos.stream().filter(e -> !veSet.contains(e))
@@ -137,27 +160,24 @@ public class MainPanelManager extends BaseManager {
 
 			updateVideosList(veSet, list);
 			for (VideoEntry entry : veSet) {
-				new Thread(() -> {
-					// look for subs if neccessary
-					if (entry.getState() == VideoState.PENDING) {
-						loadSubsForVideo(entry);
-					}
-
-					// apply subs if neccessary
-					if (entry.hasSubtitles() && !SubtitleFileUtils.hasSubs(entry.getPathToFile())) {
-						if (subFscanner.autoApplySubtitles(entry)) {
-							Platform.runLater(() -> getController().getVideosList().refresh());
-							addNotificationForVideo(entry);
+				if (!SubtitleFileUtils.hasSubs(entry.getPathToFile())) {
+					new Thread(() -> {
+						if (entry.getState() != VideoState.FINISHED) {
+							// look for subs if neccessary
+							if (entry.getState() == VideoState.PENDING) {
+								loadSubsForVideo(entry);
+							}
 						}
+						if (subFscanner.autoApplySubtitles(entry)) {
+							addNotificationForVideo(entry);
+							Platform.runLater(() -> {
+								getController().getVideosList().getSelectionModel().select(entry);
+								getController().getVideosList().refresh();
+							});
+						}
+					}, "Search for '" + entry.getAcceptableFileName() + "'").start();
 
-					}
-
-					// // add entry to list if new
-					// if (!list.contains(entry)) {
-					// updateVideosList(entry, list);
-					// }
-
-				}).start();
+				}
 			}
 		}
 	}
@@ -195,11 +215,13 @@ public class MainPanelManager extends BaseManager {
 
 	private void updateVideosList(Set<VideoEntry> entries, ObservableList<VideoEntry> list) {
 		Platform.runLater(() -> {
+			int selectedItem = panelCtrl.getVideosList().getSelectionModel().getSelectedIndex();
 			list.clear();
 			list.addAll(panelCtrl.getShowAllbtn().isSelected() ? entries
 					: entries.stream().filter(e -> !SubtitleFileUtils.hasSubs(e.getPathToFile()))
 							.collect(Collectors.toCollection(LinkedHashSet::new)));
 			panelCtrl.getVideosList().setItems(list);
+			panelCtrl.getVideosList().getSelectionModel().select(selectedItem);
 		});
 	}
 
@@ -209,9 +231,11 @@ public class MainPanelManager extends BaseManager {
 			ObservableList<VideoEntry> list = panelCtrl.getVideosList().itemsProperty().get();
 			list.clear();
 			list.addAll(showAll ? veSet
-					: veSet.stream().filter(e -> !SubtitleFileUtils.hasSubs(e.getPathToFile()))
+					: veSet.stream().filter(e -> subtitlessVideos.contains(e))
 							.collect(Collectors.toCollection(LinkedHashSet::new)));
 			panelCtrl.getVideosList().setItems(list);
+//			initVideosListCell();
+			panelCtrl.getVideosList().scrollTo(showAll ? veSet.size() - (subtitledVideos.size() + 1) : 0);
 		});
 	}
 
@@ -238,33 +262,40 @@ public class MainPanelManager extends BaseManager {
 
 		}
 	}
-	private ProgressIndicator pInd = new ProgressIndicator();
+
 	public void initVideosListCell() {
-		panelCtrl.getVideosList().setCellFactory(p -> new CharmListCell<VideoEntry>() {
+
+		panelCtrl.getVideosList().setCellFactory(new Callback<ListView<VideoEntry>, ListCell<VideoEntry>>() {
 
 			@Override
-			public void updateItem(VideoEntry ve, boolean empty) {
-				super.updateItem(ve, empty);
-				loadVideoTIle(ve);
-			}
+			public ListCell<VideoEntry> call(ListView<VideoEntry> param) {
+				ListCell<VideoEntry> listCell = new ListCell<VideoEntry>() {
+					@Override
+					protected void updateItem(VideoEntry item, boolean empty) {
+						if (!empty) {
+							loadVideoTIle(item);
+						}
+						super.updateItem(item, empty);
+					}
 
-			private void loadVideoTIle(VideoEntry ve) {
-				ListTile tile = new ListTile();
-				tile.setOnMouseClicked(panelCtrl.getVideoSelListener());
-				tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
-						: ve.hasSubtitles() ? "-fx-background-color: #ffff00;" : "-fx-background-color: #f9f7f7;");
+					private void loadVideoTIle(VideoEntry ve) {
+						ListTile tile = new ListTile();
+						tile.setOnMouseClicked(panelCtrl.getVideoSelListener());
+						tile.setStyle(SubtitleFileUtils.hasSubs(ve.getPathToFile()) ? "-fx-background-color: #eff9ef;"
+								: ve.hasSubtitles() ? "-fx-background-color: #ffff00;"
+										: "-fx-background-color: #f9f7f7;");
+						tile.textProperty().add(ve.getAcceptableFileName());
+						if (ve.getState() == VideoState.LOADING) {
+							tile.setSecondaryGraphic(new ProgressIndicator());
+						}
+						// setText(null);
+						
+						setGraphic(tile);
 
-				tile.textProperty().add(ve.getAcceptableFileName());
-				if (ve.getState() == VideoState.LOADING) {
-					tile.setSecondaryGraphic(pInd);
-				}
-				// final Image image = USStates.getImage(item.getFlag());
-				// if(image!=null){
-				// tile.setPrimaryGraphic(new ImageView(image));
-				// }
-				setText(null);
-				setGraphic(tile);
+					}
+				};
 
+				return listCell;
 			}
 		});
 	}
@@ -274,12 +305,14 @@ public class MainPanelManager extends BaseManager {
 			@Override
 			public void updateItem(Path ve, boolean empty) {
 				super.updateItem(ve, empty);
-				loadVideoTIle(ve);
+				if (!empty) {
+					loadVideoTIle(ve);
+				}
 			}
 
 			private void loadVideoTIle(Path ve) {
 				ListTile tile = new ListTile();
-
+				tile.setOnMouseClicked(panelCtrl.getSubSelectedListener());
 				tile.textProperty().add(ve.getFileName().toString());
 
 				setText(null);
@@ -323,10 +356,11 @@ public class MainPanelManager extends BaseManager {
 	}
 
 	private void loadMovieImage(VideoMetaBean vmb) {
-		if (vmb != null && vmb != VideoMetaBean.NOT_FOUND) {
+		if (vmb != null && vmb != VideoMetaBean.NOT_FOUND && vmb.getPoster() != null) {
 			new Thread(() -> {
 				try {
-					final Image img = new Image(VideoPosterCachedProvider.INSTANCE.getLocalImagePath(vmb.getPoster()), 600, 882, false, true);
+					final Image img = new Image(VideoPosterCachedProvider.INSTANCE.getLocalImagePath(vmb.getPoster()),
+							600, 882, false, true);
 					Platform.runLater(() -> panelCtrl.getShowImage().setImage(img));
 				} catch (Exception e) {
 					final Image img = new Image(vmb.getPoster(), 600, 882, false, true);
@@ -350,17 +384,21 @@ public class MainPanelManager extends BaseManager {
 				entry.setState(VideoState.LOADING);
 				Platform.runLater(() -> getController().getVideosList().refresh());
 				int subsNow = entry.getSubtitleArchives() != null ? entry.getSubtitleArchives().size() : 0;
-				
+
 				finder.lookupEverywhere(entry);
 				int subsAfter = entry.getSubtitleArchives() != null ? entry.getSubtitleArchives().size() : 0;
-				entry.setState(VideoState.FINISHED);
-				if(subsNow != subsAfter) {
-					VideoEntryCache.getInsance().addCacheEntry(entry);
+				
+				if (subsAfter > 0 && subsAfter >= subsNow) {
+					entry.setState(VideoState.FINISHED);
+					
+				} else {
+					entry.setState(VideoState.PENDING);
 				}
 				
+				VideoEntryCache.getInsance().addCacheEntry(entry);
 				Platform.runLater(() -> {
 					getController().getVideosList().refresh();
-					loadSubtitles(entry.getSubtitleArchives());
+//					initVideosListCell();
 				});
 			} else {
 				logger.warn("Timed out waiting for SubtitleFinder object " + entry.toString());

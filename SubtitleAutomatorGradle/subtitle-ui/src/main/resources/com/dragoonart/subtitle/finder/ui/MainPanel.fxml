@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import com.gluonhq.charm.glisten.control.CharmListView?>
 <?import javafx.geometry.Rectangle2D?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -30,7 +30,7 @@
             </AnchorPane>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="453.0" prefWidth="400.0">
                <children>
-                  <CharmListView fx:id="videosList" prefHeight="476.0" prefWidth="424.0" />
+                  <ListView fx:id="videosList" prefHeight="451.0" prefWidth="424.0" />
                </children>
             </AnchorPane>
         </items>
@@ -39,7 +39,7 @@
          <items>
             <Pane prefHeight="123.0" prefWidth="426.0">
                <children>
-                  <CharmListView fx:id="subtitlesList" floatingHeaderVisible="false" layoutY="1.0" prefHeight="99.0" prefWidth="426.0" />
+                  <ListView fx:id="subtitlesList" layoutY="1.0" prefHeight="99.0" prefWidth="426.0" />
                </children>
             </Pane>
             <Pane prefHeight="471.0" prefWidth="430.0">

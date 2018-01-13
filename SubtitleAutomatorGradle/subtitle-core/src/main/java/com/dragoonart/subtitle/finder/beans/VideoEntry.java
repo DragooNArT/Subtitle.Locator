@@ -58,7 +58,11 @@ public class VideoEntry implements Comparable<VideoEntry> {
 	public Path getPathToFile() {
 		return pathToFile;
 	}
-
+	
+	public void setParsedFileName(ParsedFileName pfn) {
+		parsedFileName = pfn;
+	}
+	
 	public ParsedFileName getParsedFileName() {
 		if(parsedFileName == null) {
 			parsedFileName = new ParsedFileName(getAcceptableFileName());

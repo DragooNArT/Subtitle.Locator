@@ -17,6 +17,15 @@ public class ParsedFileName {
 	private String origName;
 	private Map<String, String> parsedAttributes = new HashMap<String, String>();
 	private IFileNameParser nameParser;
+	
+	private boolean parseSuccess = false;
+	
+	public boolean isParseSuccess() {
+		return parseSuccess;
+	}
+	public void setParseSuccess(boolean parseSuccess) {
+		this.parseSuccess = parseSuccess;
+	}
 	//constructor for JSON
 	public ParsedFileName() {
 		nameParser = ParserFactory.getFileNameParser();
@@ -88,10 +97,13 @@ public class ParsedFileName {
 	}
 	
 	private void load() {
-		if (nameParser.getVersion() > version) {
+		if (!parseSuccess || nameParser.getVersion() > version) {
 			parsedAttributes.clear();
 			try {
 			parsedAttributes = nameParser.getParsedName(getOrigName());
+			if(parsedAttributes.get(IFileNameParser.SHOW_NAME) != null) {
+				parseSuccess = true;
+			}
 			version = nameParser.getVersion();
 			} catch(Exception e) {
 				logger.error("Unable to parse file with name: "+getOrigName(), e);

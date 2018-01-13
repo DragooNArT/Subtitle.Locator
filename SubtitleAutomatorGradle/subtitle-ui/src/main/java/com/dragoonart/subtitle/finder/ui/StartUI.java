@@ -1,5 +1,7 @@
 package com.dragoonart.subtitle.finder.ui;
 
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.net.URL;
 
@@ -32,7 +34,7 @@ public class StartUI extends Application {
 		try {
 			Scene scene;
 			if (PreferencesManager.INSTANCE.hasLocations()) {
-				scene = new Scene(ResourceManager.getScene("MainPanel.fxml"), 845, 557);
+				scene = new Scene(ResourceManager.getScene("MainPanel.fxml"), 852, 557);
 			} else {
 				scene = new Scene(ResourceManager.getScene("ChooseLocation.fxml"), 640, 480);
 			}
@@ -81,10 +83,43 @@ public class StartUI extends Application {
 			URL imageLoc = getClass().getResource("Subscript_16px.png");
 			java.awt.Image image = ImageIO.read(imageLoc);
 			trayIcon = new java.awt.TrayIcon(image);
-
+			trayIcon.setToolTip("Subtitle Locator BG?");
 			// if the user double-clicks on the tray icon, show the main app stage.
 			trayIcon.addActionListener(event -> Platform.runLater(this::showStage));
-
+			trayIcon.addMouseListener(new MouseListener() {
+				
+				@Override
+				public void mouseReleased(MouseEvent e) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void mousePressed(MouseEvent e) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void mouseExited(MouseEvent e) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					if(e.getClickCount() == 2) {
+						stage.show();
+					}
+					
+				}
+			});
 			// if the user selects the default menu item (which includes the app name),
 			// show the main app stage.
 			java.awt.MenuItem openItem = new java.awt.MenuItem("Open");

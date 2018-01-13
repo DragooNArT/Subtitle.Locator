@@ -52,6 +52,7 @@ public abstract class AbstractSubtitleService {
 				.post(ClientResponse.class);
 		return getSubtitleArchives(Jsoup.parse(resp.getEntity(String.class)),
 				ve.getParsedFileName());
+		
 		} catch (Exception e) {
 			logger.error("Failed to get subtitle archives from: "+getServiceProvider().getBaseUrl()+" for video: "+ve.getFileName(), e);
 		} finally {
@@ -141,7 +142,13 @@ public abstract class AbstractSubtitleService {
 			if (!href.startsWith(getServiceProvider().getBaseUrl())) {
 				href = getServiceProvider().getBaseUrl() + href;
 			}
-			if (!isLinkAlreadyDownloaded(pfn, href)) {
+			
+			if (isLinkAlreadyDownloaded(pfn, href)) {
+				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href,
+						getArchiveForLink(pfn, href));
+				results.add(entry);
+				
+			} else {
 				// download and add to results
 				Path subtitleZip = null;
 				try {
@@ -153,10 +160,6 @@ public abstract class AbstractSubtitleService {
 				} catch (ParseException | IOException e) {
 					e.printStackTrace();
 				}
-			} else {
-				SubtitleArchiveEntry entry = new SubtitleArchiveEntry(this.getServiceProvider(), href,
-						getArchiveForLink(pfn, href));
-				results.add(entry);
 			}
 		}
 		return results;

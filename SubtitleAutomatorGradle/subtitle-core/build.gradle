@@ -36,5 +36,7 @@ compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', versio
  compile group: 'com.github.chrisvest', name: 'stormpot', version: '2.4.1' 
 compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+compile group: 'com.google.inject', name: 'guice', version: '4.1.0'
+
 }
 

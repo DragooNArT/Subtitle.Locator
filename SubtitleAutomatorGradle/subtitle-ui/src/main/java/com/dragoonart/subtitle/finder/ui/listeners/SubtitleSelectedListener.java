@@ -9,31 +9,42 @@ import com.dragoonart.subtitle.finder.ui.managers.MainPanelManager;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.input.MouseEvent;
 
-public class SubtitleSelectedListener implements ChangeListener<Path> {
+public class SubtitleSelectedListener implements EventHandler<MouseEvent> {
 	MainPanelManager panelManager;
 	Alert alert;
+
 	public SubtitleSelectedListener(MainPanelManager panelManager) {
 		this.panelManager = panelManager;
-		alert = new Alert(Alert.AlertType.CONFIRMATION,"Do you want to apply these subtitles?");
+		alert = new Alert(Alert.AlertType.CONFIRMATION, "Do you want to apply these subtitles?");
 		alert.setTitle("Confirmation Dialog");
 	}
 
+	Path previousSelectedSub;
 
 	@Override
-	public void changed(ObservableValue<? extends Path> observable, Path oldValue, Path newValue) {
+	public void handle(MouseEvent event) {
+		if (event.getClickCount() == 2) {
 			Optional<ButtonType> result = alert.showAndWait();
 			if (result.get() == ButtonType.OK) {
 				try {
-					copySubtitleToMovie(panelManager.getSelectedVideo(), observable.getValue());
+					Path currSelSub = panelManager.getController().getSubtitlesList().getSelectionModel()
+							.getSelectedItem();
+					if (currSelSub != previousSelectedSub) {
+						copySubtitleToMovie(panelManager.getSelectedVideo(), currSelSub);
+						previousSelectedSub = currSelSub;
+					}
 					panelManager.getController().getVideosList().refresh();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
+		}
 
 	}
 
@@ -58,4 +69,5 @@ public class SubtitleSelectedListener implements ChangeListener<Path> {
 		// place the new subtitle file
 		Files.copy(subPath, newFilePath);
 	}
+
 }

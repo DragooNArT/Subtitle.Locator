@@ -21,7 +21,7 @@ public class FileNameParser implements IFileNameParser {
 	Pattern dotSepPattern = Pattern.compile("\\d{1,}[.]\\d{1,}");
 	Pattern XXxXXPattern = Pattern.compile("\\d{1,}[x]\\d{1,}");
 	private static final String[] allForRemoval = new String[] { "XviD","HDTV", "HEVC", "UNRATED", "BluRay", "x265", "DTS-HD",
-			"X264", "WEB-DL", "H264", "DDC5", "AAC5", "DTS", "HDRip", "DD5", "BRRip" };
+			"X264", "WEB-DL", "H264", "DDC5", "AAC5", "DTS", "HDRip", "DD5", "BRRip" , "LIMITED" };
 
 	FileNameParser() {
 		// package private
@@ -33,7 +33,7 @@ public class FileNameParser implements IFileNameParser {
 	}
 
 	public static boolean canSplit(String origName) {
-		if (StringUtils.countMatches(origName, ".") > 0 || StringUtils.countMatches(origName, "-") > 1
+		if (StringUtils.countMatches(origName, ".") > 0 || StringUtils.countMatches(origName, "-") > 3
 				|| StringUtils.countMatches(origName, " ") > 2) {
 			return true;
 		}

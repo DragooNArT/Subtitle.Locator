@@ -8,12 +8,14 @@ import org.slf4j.LoggerFactory;
 import com.dragoonart.subtitle.finder.beans.VideoEntry;
 import com.dragoonart.subtitle.finder.ui.managers.MainPanelManager;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.input.MouseEvent;
 
 public class VideoSelectedListener implements ChangeListener<VideoEntry>, EventHandler<MouseEvent> {
@@ -23,18 +25,7 @@ public class VideoSelectedListener implements ChangeListener<VideoEntry>, EventH
 	public VideoSelectedListener(MainPanelManager panelManager) {
 		this.panelManager = panelManager;
 	}
-
-	@Override
-	public void changed(ObservableValue<? extends VideoEntry> observable, VideoEntry oldValue, VideoEntry newValue) {
-		panelManager.loadVideoMeta(observable.getValue());
-		if (observable.getValue().hasSubtitles()) {
-			panelManager.loadSubtitles(observable.getValue().getSubtitleArchives());
-		} else {
-			panelManager.getController().getSubtitlesList().setItems(FXCollections.emptyObservableList());
-		}
-
-	}
-
+	
 	@Override
 	public void handle(MouseEvent event) {
 		if (event.getClickCount() > 1) {
@@ -58,6 +49,20 @@ public class VideoSelectedListener implements ChangeListener<VideoEntry>, EventH
 				alert.showAndWait();
 			}
 		}
+	}
+
+
+	@Override
+	public void changed(ObservableValue<? extends VideoEntry> observable, VideoEntry oldValue, VideoEntry newValue) {
+		if(newValue != null) {
+			panelManager.loadVideoMeta(newValue);
+		}
+		if (newValue != null && newValue.hasSubtitles()) {
+			panelManager.loadSubtitles(newValue.getSubtitleArchives());
+		} else {
+			panelManager.getController().getSubtitlesList().setItems(FXCollections.emptyObservableList());
+		}
+		
 	}
 
 }
